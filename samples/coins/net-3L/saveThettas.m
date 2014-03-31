@@ -1,4 +1,4 @@
-function saveThettas(nn_params, input_layer_size, hidden_layer_size, datasetDir)
+function saveThettas(nn_params, input_layer_size, hidden_layer_size, num_output_labels, datasetDir)
 
     Theta1 = reshape(nn_params(1:hidden_layer_size * (input_layer_size + 1)), ...
                      hidden_layer_size, (input_layer_size + 1));

@@ -10,20 +10,19 @@ mkdir(graphDirName);
 
 % dataset directory
 %datasetDir = 'E:/nn4coins/dataset-3_924_15_200_100_gau/';
-datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-3_924_15_200_100_gau/';
-
+datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-6_1848_28_200_100_gau/';
 img_w = 200; % image width
 img_h = 100; % image height
 
 input_layer_size  = img_w * img_h;  % input layer size
 hidden_layer_size = 1000;           % hidden layer size
-num_output_labels = 3;             % output layer size, amount of coinIdx, from 1 to ...
+num_output_labels = 30;             % output layer size, amount of coinIdx, from 1 to ...
 
 lambda = 1; % weight decay term (regularization)
                           
-trainingIterationCount = 500; % amount of iterations over whole training set
+trainingIterationCount = 20; % amount of iterations over whole training set
 
-batchSize=10; % training sets in a mini-batch
+batchSize=50; % training sets in a mini-batch
 
 
 addpath ../libs/         % load libs
@@ -151,14 +150,14 @@ print(h, '-djpeg', strcat(workingDir, graphDirName, '/', num2str(trainingIter), 
     fprintf('Iteration %4i \r', trainingIter);
     
     % save thetas - can be used if training cycle interrupted 
-    saveThettas(nn_params, input_layer_size, hidden_layer_size, datasetDir);
+    saveThettas(nn_params, input_layer_size, hidden_layer_size, num_output_labels, datasetDir);
 
 end;
 
 fprintf('\nTraining Neural Network Complete ... \n')
 
 % save thetas
-saveThettas(nn_params, input_layer_size, hidden_layer_size, datasetDir);
+saveThettas(nn_params, input_layer_size, hidden_layer_size, num_output_labels, datasetDir);
              
 % show current time
 time = datestr(now,'yyyy-mm-dd HH:MM:SS FFF');

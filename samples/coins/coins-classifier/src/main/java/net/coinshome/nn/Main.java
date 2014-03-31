@@ -26,7 +26,7 @@ public class Main {
 
 	// dataset dir - used for loading thettas, images, csv file (for decoding hypothesis to chn_id)
 	static String DATASET_DIR = "C:/Develop/src/pavlikovkskiy/chn/data/dataset-3_924_15_200_100_gau/";
-	// file with test image - should be under  <DATASET_DIR>/test
+	// file with test image - should be under  <DATASET_DIR>/img/test
 	static String TEST_IMAGE_FILE_NAME = "100001001.jpg";
 	
 	static final int AMOUNT_OF_TOP_PREDICTION = 3; // amount of top predictions (by probability) returned by classifier
@@ -73,7 +73,7 @@ public class Main {
 	private static void runCoinClassifier(String inputFileName, boolean showInBrowser) throws Exception
 	{
 
-		File inImgFile = new File(DATASET_DIR + "test/", inputFileName);
+		File inImgFile = new File(DATASET_DIR + "img/test/", inputFileName);
 		
         BufferedImage img = ImageIO.read(new FileInputStream(inImgFile));
 		
