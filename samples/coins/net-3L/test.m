@@ -5,9 +5,9 @@ clear ; close all; clc % cleanup
 %% =========== Initialization =============
 % Check / setup parameters before run
 
-%datasetDir = 'E:/nn4coins/dataset-3_924_15_200_100_gau/';
+datasetDir = 'E:/nn4coins/dataset-3_924_14_200_100_gau/';
 %datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-3_924_15_200_100_gau/';
-datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-6_1848_28_200_100_gau/';
+%datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-6_1848_28_200_100_grayscale/';
 
 imageDir = strcat(datasetDir, 'img/');
 
