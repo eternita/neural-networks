@@ -94,10 +94,17 @@ public class CoinNNInputPreparer {
 	
 	public void prepare()
 	{
-		Map<String, Long> coinIdxMap = getCoinIndexes();
-		
+//		Map<String, Long> coinIdxMap = getCoinIndexes();
+		Map<String, Long> coinIdxMap = new LinkedHashMap<String, Long>();
+
 //		System.out.println(coinIdxMap);
-		
+		Long processedCoinInstances = 0l;
+		Long processedImages = 0l;
+		Map<String, Long> counters = new LinkedHashMap<String, Long>();
+    	counters.put("processedCoinInstances", processedCoinInstances);
+    	counters.put("processedImages", processedImages);
+
+
 		BufferedReader queryReader = null;
 		String line = "";
 		List<String> coinRecords = new ArrayList<String>(); // records with the same chnCoinId
@@ -129,7 +136,7 @@ public class CoinNNInputPreparer {
 					// chnCoinId has changed
 					
 					// flush previous data
-					List<String> ciRecords = getCIRecords(coinRecords, coinIdxMap, coinIdsWithLowDetectedInstances);
+					List<String> ciRecords = getCIRecords(coinRecords, coinIdxMap, coinIdsWithLowDetectedInstances, counters);
 					splitAndSave2csv(ciRecords, COIN_ALL_CSV_FILE, TR_SET_CSV_FILE, CV_SET_CSV_FILE, TST_SET_CSV_FILE);
 			
 					totalCoinInstances += coinRecords.size();
@@ -142,7 +149,7 @@ public class CoinNNInputPreparer {
 			} // while ((line = queryReader.readLine()) != null)
 			
 			// flush the last coin
-			List<String> ciRecords = getCIRecords(coinRecords, coinIdxMap, coinIdsWithLowDetectedInstances);
+			List<String> ciRecords = getCIRecords(coinRecords, coinIdxMap, coinIdsWithLowDetectedInstances, counters);
 			splitAndSave2csv(ciRecords, COIN_ALL_CSV_FILE, TR_SET_CSV_FILE, CV_SET_CSV_FILE, TST_SET_CSV_FILE);
 			totalCoinInstances += coinRecords.size();
 			
@@ -161,11 +168,15 @@ public class CoinNNInputPreparer {
 			}
 		}
 		
-		System.out.println("Coin ids with a lot of detection errors.");
+/*		System.out.println("Coin ids with a lot of detection errors.");
 		for (String coinId : coinIdsWithLowDetectedInstances)
 			System.out.println(coinId);
-		
+*/		
 				
+		processedCoinInstances = counters.get("processedCoinInstances");
+		processedImages = counters.get("processedImages");
+		System.out.println("Saved CoinInstances " + processedCoinInstances);
+		System.out.println("Generaged Images " + processedImages);
 		return;
 	}
 	
@@ -176,8 +187,14 @@ public class CoinNNInputPreparer {
 	 * @param coinIdxMap
 	 * @return list with strings for CSV
 	 */
-	private List<String> getCIRecords(List<String> coinRecords, Map<String, Long> coinIdxMap, Set<String> coinIdsWithLowDetectedInstances) {
+	private List<String> getCIRecords(
+			List<String> coinRecords, 
+			Map<String, Long> coinIdxMap, 
+			Set<String> coinIdsWithLowDetectedInstances,
+			Map<String, Long> counters
+			) {
 		
+
 		String coinId = null;
 		List<String> ciRecoids = new ArrayList<String>();
 		int notDetectedCount = 0;
@@ -188,7 +205,6 @@ public class CoinNNInputPreparer {
 			coinId = lineArr[0]; 
 			String ciId = lineArr[1]; 
 			String imgId = lineArr[2]; 
-			long coinIdx = coinIdxMap.get(coinId);
 //			String coinIdxStr = "" + coinIdx;
 			Set<String> generatedImgIndexes = null;
 			{ // start process images
@@ -205,7 +221,19 @@ public class CoinNNInputPreparer {
 			            ImageIO.write(img, "jpg", new FileOutputStream(new File(NOT_DETECTED_IMG_DIR, imgId + ".jpg")));
 			            notDetectedCount++;
 			        } else {
+						long coinIdx = getCoinIndex(coinIdxMap, coinId);
 			        	generatedImgIndexes = generateImagesAndIndexes(img, cii, coinIdx, i + 1);
+			        	
+			        	{ // update counters
+							Long processedCoinInstances = counters.get("processedCoinInstances");
+							Long processedImages = counters.get("processedImages");
+
+				        	processedCoinInstances++;
+				        	processedImages += generatedImgIndexes.size();
+				        	
+				        	counters.put("processedCoinInstances", processedCoinInstances);
+				        	counters.put("processedImages", processedImages);
+			        	}
 			        }
 			        
 				} catch (FileNotFoundException ex) {
@@ -223,6 +251,7 @@ public class CoinNNInputPreparer {
 				// coin was not detected or other error ...
 				
 			} else {
+				long coinIdx = getCoinIndex(coinIdxMap, coinId);
 				for (String imgIdx : generatedImgIndexes)
 				{
 					StringBuffer sb = new StringBuffer();
@@ -348,50 +377,18 @@ public class CoinNNInputPreparer {
 		
 	}
 
-	/**
-	 * create CoinIdx {1,2, ... } based on chnCoinIds
-	 * 
-	 * @return
-	 */
-	private Map<String, Long> getCoinIndexes()
+	private long getCoinIndex(Map<String, Long> coinIdxMap, String coinId)
 	{
-		Map<String, Long> coinIdxMap = new LinkedHashMap<String, Long>();
-		
-		BufferedReader queryReader = null;
-		String line = "";
-
-		try {
-
-			queryReader = new BufferedReader(new FileReader(QUERY_EXPORT_FILE));
-			long coinIdx = 1;
-			while ((line = queryReader.readLine()) != null) {
-
-				// use comma as separator
-				String[] lineArr = line.split(CSV_SPLITER);
-				String coinId = lineArr[0]; 
+		Long coinIdx = coinIdxMap.get(coinId);
 				
-				if (null == coinIdxMap.get(coinId))
-				{
-					coinIdxMap.put(coinId, coinIdx);
-					coinIdx++;
-				}
-				
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			if (queryReader != null) {
-				try {
-					queryReader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+		if (null == coinIdx)
+		{
+			coinIdx = (long) (coinIdxMap.size() + 1);
+			coinIdxMap.put(coinId, coinIdx);
 		}
-		
-		return coinIdxMap;
+		return coinIdx.longValue();
 	}
+	
 	
 	private void splitAndSave2csv(
 			List<String> ciRecords, 
