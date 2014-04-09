@@ -6,10 +6,12 @@ clear ; close all; clc % cleanup
 % Check / setup parameters before run
 
 %datasetDir = 'E:/nn4coins/dataset-3_924_14_200_100_gau/';
-datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-5_50_25_400_200_grayscale-cnn/';
+datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-100_468_468_400_200_grayscale-cnn/';
+%datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-5_25_400_200_grayscale-cnn/';
+%datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-100_468_468_400_200_grayscale-cnn/';
 %datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-100_936_468_400_200_grayscale-cnn/';
 
-imageDir = strcat(datasetDir, 'img/');
+imageDir = strcat(datasetDir, 'img_labeled/');
 
 imgW = 400; % image width
 imgH = 200; % image height

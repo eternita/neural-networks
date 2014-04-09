@@ -6,15 +6,15 @@ clear ; close all; clc % cleanup
 img_w = 400; % image width
 img_h = 200; % image height
 
-%datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-100_936_468_400_200_grayscale-cnn/';
-datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-5_50_25_400_200_grayscale-cnn/';
-unsupervisedImgDir = 'img/unsupervised/'; % sub directory with images for auto-encoder training (unlabeled/for unsupervised feature extraction)
-imgDir = 'img/'; % sub directory with images
+datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-100_3276_468_400_200_grayscale-cnn2/';
+%datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-100_468_468_400_200_grayscale-cnn/';
+unlabeledImgDir = 'img_unlabeled/'; % sub directory with images for auto-encoder training (unlabeled/for unsupervised feature extraction)
+imgDir = 'img_labeled/'; % sub directory with images
 tempDir = 'temp/'; % for pooled features used with mini batch
 
 % !! when change batchSize - clean up temp
 batchSize = 30; % batch size for L3 mini-batch algorithm
-trainingIterationCount = 50; % L3 amount of iterations over whole training set
+trainingIterationCount = 2000; % L3 amount of iterations over whole training set
 numClassesL3 = 100; % amount of output lables, classes (e.g. coins)
 
 hiddenSizeL2 = 600;     % L2 hidden layer size
@@ -26,7 +26,7 @@ poolSize = 15; % used for pooling convolved features
 
 visibleSizeL1 = patchSize * patchSize; % number of input units for the patch
 
-amountOfImagesForPatchGeneration = 500;
+%amountOfImagesForPatchGeneration = 500;
 
 
 sparsityParam = 0.01;   % 0.01 desired average activation of the hidden units.
@@ -46,7 +46,7 @@ softmaxLambda = 1e-4; % weight decay for L3
 
 %  Use minFunc to minimize cost functions
 options.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.
-options.maxIter = 400;	  % Maximum number of iterations of L-BFGS to run 
+options.maxIter = 800;	  % Maximum number of iterations of L-BFGS to run 
 options.display = 'on';
 
 softmaxOptions.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.s
@@ -54,37 +54,13 @@ softmaxOptions.maxIter = 1; % update minFunc confugs for mini batch
 softmaxOptions.display = 'on';
 
 
-%% STEP : Load Training Data
-
-fprintf('Loading training data for unsupervised learning ...\n')
-csvdata = csvread(strcat(datasetDir, 'coin.unsupervised_tr.csv'));    
-
-sampleId = csvdata(:, 1); % first column is sampleId (imageIdx)
-y = csvdata(:, 2); % second column is coinIdx
-m = size(csvdata, 1); % amount of training examples
-
-fprintf('Amount of training examples: %u \n', m);
-
-% shuffling data for batch gradient descent
-
-%shuffledOrder = randperm(m);
-
-%debug only
-shuffledOrder = 1:m;
-
-shuffledSampleId = sampleId(shuffledOrder, :);
-%shuffledY = y(shuffledOrder, :);
-
-
-
-fprintf('Loading %u random images for patches ...\n', amountOfImagesForPatchGeneration);
-
 
 %% Visualize some full size images
 % visualize some full size images
+csvdata = csvread(strcat(datasetDir, 'coin.tr.csv'));    
 visualAmount = 3^2;
 fprintf('Visualize %u full size images ...\n', visualAmount);
-[previewX] = loadImageSet(shuffledSampleId(1:visualAmount), strcat(datasetDir, unsupervisedImgDir), img_w, img_h);
+[previewX] = loadImageSet(csvdata(1:visualAmount, 1), strcat(datasetDir, imgDir), img_w, img_h);
 fullSizeImages = zeros(img_w^2, visualAmount);
 for i = 1:visualAmount
     % visualization works for squared matrixes
@@ -96,11 +72,13 @@ display_network(fullSizeImages);
 
 clear previewX fullSizeImages;
 
-pause;
+%pause;
+%}
 %%======================================================================
 
 %% STEP : Patches for auto-encoders training
 
+fprintf('Auto-encoders training ...\n')
 
 if exist(strcat(datasetDir, 'PATCHES.mat'), 'file')
     % PATCHES.mat file exists. 
@@ -111,9 +89,19 @@ else
     fprintf('Cant load patches for sparse auto-encoder training from %s  \n', strcat(datasetDir, 'PATCHES.mat'));
     fprintf('  Do patch geenration \n');
     
-    [shuffledX] = loadImageSet(shuffledSampleId(1:amountOfImagesForPatchGeneration), strcat(datasetDir, unsupervisedImgDir), img_w, img_h);
+    unlabeledImgDirFullPath = strcat(datasetDir, unlabeledImgDir); % dir with unlabeled images
+    unlabeledImgFiles = dir(fullfile(unlabeledImgDirFullPath, '*.jpg')); % img files
+    fprintf('Loading %u random images for patches ...\n', length(unlabeledImgFiles));
+    unlabeledImagesX = zeros(img_w*img_h, length(unlabeledImgFiles)); % unlabeled images
+    % loop over files and load images into matrix
+    for idx = 1:length(unlabeledImgFiles)
+        gImg = imread([unlabeledImgDirFullPath unlabeledImgFiles(idx).name]);
+        imgV = reshape(gImg, 1, img_w*img_h); % unroll       
+        unlabeledImagesX(:, idx) = imgV; 
+    end
+    
     fprintf('Generating %u patches (%u x %u) from images ...\n', numPatches, patchSize, patchSize);
-    [patches, meanPatch] = getPatches(shuffledX, img_w, img_h, patchSize, numPatches);
+    [patches, meanPatch] = getPatches(unlabeledImagesX, img_w, img_h, patchSize, numPatches);
 
     % remove (clean up some memory)
     clear shuffledX
@@ -121,7 +109,7 @@ else
     save(strcat(datasetDir, 'PATCHES.mat'), 'patches');
     display_network(patches(:,randi(size(patches,2),200,1)));
     fprintf('Patches generation complete ...\n');
-    pause;
+%    pause;
 end
 
 
@@ -160,9 +148,9 @@ W = reshape(sae1OptTheta(1:visibleSizeL1 * hiddenSizeL2), hiddenSizeL2, visibleS
 b = sae1OptTheta(2*hiddenSizeL2*visibleSizeL1+1:2*hiddenSizeL2*visibleSizeL1+hiddenSizeL2);
 display_network(W'); % L2
 
-%print -djpeg weights.jpg   % save the visualization to a file 
+%print -djpeg l2_sae_features.jpg   % save the visualization to a file 
 
-pause;
+%pause;
 
 %%======================================================================
 %% STEP : Implement convolution and pooling
@@ -177,13 +165,12 @@ m = size(csvdata, 1); % amount of training examples
 
 fprintf('Amount of training examples: %u \n', m);
 
+%plain order - good for stop/restart training
+shuffledOrder = 1:m;
 
 % shuffling data for batch gradient descent
 % DO NOT USE WITH CONV&POOL CACHING
 %shuffledOrder = randperm(m);
-
-%debug only
-shuffledOrder = 1:m;
 
 shuffledSampleId = sampleId(shuffledOrder, :);
 shuffledY = y(shuffledOrder, :);
