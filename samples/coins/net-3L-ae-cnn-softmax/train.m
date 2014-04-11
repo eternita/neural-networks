@@ -1,40 +1,35 @@
 clear ; close all; clc % cleanup
 %%======================================================================
-%% STEP 0: Here we provide the relevant parameters values that will
-%  allow your sparse autoencoder to get good filters; you do not need to 
-%  change the parameters below.
-img_w = 400; % image width
-img_h = 200; % image height
+%% Configuration
+%  ! Setup and check all parameters before run
 
-datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-100_3276_468_400_200_grayscale-cnn2/';
-%datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-100_468_468_400_200_grayscale-cnn/';
+datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-5_25_400_200/'; % dataset root dir
+trainSetCSVFile = 'coin.tr.shuffled.csv'; % this file will be generated from 'coin.tr.csv'
+
 unlabeledImgDir = 'img_unlabeled/'; % sub directory with images for auto-encoder training (unlabeled/for unsupervised feature extraction)
-imgDir = 'img_labeled/'; % sub directory with images
+imgDir = 'img_grayscale/'; % sub directory with images
 tempDir = 'temp/'; % for pooled features used with mini batch
 
-% !! when change batchSize - clean up temp
-batchSize = 30; % batch size for L3 mini-batch algorithm
-trainingIterationCount = 2000; % L3 amount of iterations over whole training set
-numClassesL3 = 100; % amount of output lables, classes (e.g. coins)
+imgW = 400; % image width, ( width >= height )
+imgH = 200; % image height
+
+% !! WHEN CHANGE batchSizeL3 - CLEAN UP / DELETE TEMP DIRECTORY (tempDir)
+batchSizeL3 = 100; % batch size for L3 mini-batch algorithm
+numTrainIterL3 = 400; % L3 amount of iterations over whole training set
+numClassesL3 = 5; % amount of output lables, classes (e.g. coins)
 
 hiddenSizeL2 = 600;     % L2 hidden layer size
 
 patchSize = 6; % patch size/dimention for L2 feature extraction (using auto-encodes)
-numPatches = 1000; % amount of patches for auto-encoder training
+saeNumPatches = 10000; % amount of patches for auto-encoder training
 
 poolSize = 15; % used for pooling convolved features
 
 visibleSizeL1 = patchSize * patchSize; % number of input units for the patch
 
-%amountOfImagesForPatchGeneration = 500;
-
-
-sparsityParam = 0.01;   % 0.01 desired average activation of the hidden units.
-                     % (This was denoted by the Greek alphabet rho, which looks like a lower-case "p",
-		     %  in the lecture notes). 
-lambda = 0.003;     % weight decay parameter       
-beta = 3;            % weight of sparsity penalty term       
-
+saeSparsityParam = 0.01;   % desired average activation of the hidden units.
+saeLambda = 0.003;     % weight decay for SAE (sparse auto-encoders)       
+saeBeta = 3;            % weight of sparsity penalty term       
 
 addpath ../libs/         % load libs
 addpath ../libs/minFunc/
@@ -43,29 +38,38 @@ convolutionsStepSize = 50;
 
 softmaxLambda = 1e-4; % weight decay for L3
 
-
 %  Use minFunc to minimize cost functions
-options.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.
-options.maxIter = 800;	  % Maximum number of iterations of L-BFGS to run 
-options.display = 'on';
+saeOptions.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.
+saeOptions.maxIter = 800;	  % Maximum number of iterations of L-BFGS to run 
+saeOptions.display = 'on';
 
-softmaxOptions.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.s
+softmaxOptions.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.
 softmaxOptions.maxIter = 1; % update minFunc confugs for mini batch 
 softmaxOptions.display = 'on';
 
 
+%% Initializatoin
 
-%% Visualize some full size images
-% visualize some full size images
-csvdata = csvread(strcat(datasetDir, 'coin.tr.csv'));    
+% create suffled training set - if doesn't created
+if ~exist(strcat(datasetDir, 'coin.tr.shuffled.csv'), 'file')
+    fprintf('Generating shuffled training set coin.tr.shuffled.csv from coin.tr.csv \n');
+    shuffleTrainingSet(datasetDir, 'coin.tr.csv', 'coin.tr.shuffled.csv');
+end
+
+mkdir(strcat(datasetDir, tempDir)); % create temp dir - if doesn't exist
+
+%% Visualize some full size images from training set
+% make sure visualy we work on the right dataset
+
+csvdata = csvread(strcat(datasetDir, trainSetCSVFile));    
 visualAmount = 3^2;
 fprintf('Visualize %u full size images ...\n', visualAmount);
-[previewX] = loadImageSet(csvdata(1:visualAmount, 1), strcat(datasetDir, imgDir), img_w, img_h);
-fullSizeImages = zeros(img_w^2, visualAmount);
+[previewX] = loadImageSet(csvdata(1:visualAmount, 1), strcat(datasetDir, imgDir), imgW, imgH);
+fullSizeImages = zeros(imgW^2, visualAmount);
 for i = 1:visualAmount
     % visualization works for squared matrixes
     % before visualization convert img_h x img_w -> img_w * img_w
-    fullSizeImages(:, i) = resizeImage2Square(previewX(:, i), img_w, img_h);
+    fullSizeImages(:, i) = resizeImage2Square(previewX(:, i), imgW, imgH);
 end;
 
 display_network(fullSizeImages);
@@ -76,7 +80,7 @@ clear previewX fullSizeImages;
 %}
 %%======================================================================
 
-%% STEP : Patches for auto-encoders training
+%% Patches for auto-encoders training
 
 fprintf('Auto-encoders training ...\n')
 
@@ -92,21 +96,21 @@ else
     unlabeledImgDirFullPath = strcat(datasetDir, unlabeledImgDir); % dir with unlabeled images
     unlabeledImgFiles = dir(fullfile(unlabeledImgDirFullPath, '*.jpg')); % img files
     fprintf('Loading %u random images for patches ...\n', length(unlabeledImgFiles));
-    unlabeledImagesX = zeros(img_w*img_h, length(unlabeledImgFiles)); % unlabeled images
+    unlabeledImagesX = zeros(imgW*imgH, length(unlabeledImgFiles)); % unlabeled images
     % loop over files and load images into matrix
     for idx = 1:length(unlabeledImgFiles)
         gImg = imread([unlabeledImgDirFullPath unlabeledImgFiles(idx).name]);
-        imgV = reshape(gImg, 1, img_w*img_h); % unroll       
+        imgV = reshape(gImg, 1, imgW*imgH); % unroll       
         unlabeledImagesX(:, idx) = imgV; 
     end
     
-    fprintf('Generating %u patches (%u x %u) from images ...\n', numPatches, patchSize, patchSize);
-    [patches, meanPatch] = getPatches(unlabeledImagesX, img_w, img_h, patchSize, numPatches);
+    fprintf('Generating %u patches (%u x %u) from images ...\n', saeNumPatches, patchSize, patchSize);
+    [patches, meanPatch] = getPatches(unlabeledImagesX, imgW, imgH, patchSize, saeNumPatches);
 
     % remove (clean up some memory)
     clear shuffledX
 
-    save(strcat(datasetDir, 'PATCHES.mat'), 'patches');
+    save(strcat(datasetDir, 'PATCHES.mat'), 'patches', 'meanPatch');
     display_network(patches(:,randi(size(patches,2),200,1)));
     fprintf('Patches generation complete ...\n');
 %    pause;
@@ -118,7 +122,7 @@ end
 %pause;
 
 %%======================================================================
-%% STEP : Learning L2 features with sparse autoencoder 
+%% Learning L2 features with sparse autoencoders 
 
 
 if exist(strcat(datasetDir, 'SAE1_FEATURES.mat'), 'file')
@@ -136,9 +140,9 @@ else
 
     [sae1OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
                                        visibleSizeL1, hiddenSizeL2, ...
-                                       lambda, sparsityParam, ...
-                                       beta, patches), ...
-                                  theta, options);
+                                       saeLambda, saeSparsityParam, ...
+                                       saeBeta, patches), ...
+                                  theta, saeOptions);
 
     save(strcat(datasetDir, 'SAE1_FEATURES.mat'), 'sae1OptTheta', 'meanPatch');
 end
@@ -153,11 +157,11 @@ display_network(W'); % L2
 %pause;
 
 %%======================================================================
-%% STEP : Implement convolution and pooling
+%% Implement convolution and pooling
 
 fprintf('Loading training images for L3 training (convolution & pooling) ...\n')
 
-csvdata = csvread(strcat(datasetDir, 'coin.tr.csv'));    
+csvdata = csvread(strcat(datasetDir, trainSetCSVFile));    
 
 sampleId = csvdata(:, 1); % first column is sampleId (imageIdx)
 y = csvdata(:, 2); % second column is coinIdx
@@ -165,22 +169,11 @@ m = size(csvdata, 1); % amount of training examples
 
 fprintf('Amount of training examples: %u \n', m);
 
-%plain order - good for stop/restart training
-shuffledOrder = 1:m;
-
-% shuffling data for batch gradient descent
-% DO NOT USE WITH CONV&POOL CACHING
-%shuffledOrder = randperm(m);
-
-shuffledSampleId = sampleId(shuffledOrder, :);
-shuffledY = y(shuffledOrder, :);
-
         
-%% =================== L3 (Softmax) layer Initialization ===================
+%% L3 (Softmax) layer Initialization 
 
 %inputSize = 600 * 13 * 26;
-inputSizeL3 = hiddenSizeL2 * ((img_h - patchSize + 1) / poolSize) * 2 * ((img_h - patchSize + 1) / poolSize);
-
+inputSizeL3 = hiddenSizeL2 * ((imgH - patchSize + 1) / poolSize) * 2 * ((imgH - patchSize + 1) / poolSize);
 
 if exist(strcat(datasetDir, 'SOFTMAX_THETA.mat'), 'file')
     % SOFTMAX_THETA.mat file exists. 
@@ -189,30 +182,30 @@ if exist(strcat(datasetDir, 'SOFTMAX_THETA.mat'), 'file')
     theta = softmaxTheta(:);  
 else    
     % SOFTMAX_THETA.mat File does not exist. random initialization
-    fprintf('Cant load Thetta1 from %s  \n', strcat(datasetDir, 'SOFTMAX_THETA.mat'));
+    fprintf('Cant load softmaxTheta from %s  \n', strcat(datasetDir, 'SOFTMAX_THETA.mat'));
     fprintf('  Do random initialization for softmax theta \n');
     theta = 0.005 * randn(numClassesL3 * inputSizeL3, 1);
 end
 
-%% =================== Training Layer3 with mini batch ===================
+%% Training Layer3 using mini batch gradient descent
 %
 fprintf('\nTraining L3 with mini batch ... \n')
 
-batchIterationCount = ceil(m / batchSize);
+batchIterationCount = ceil(m / batchSizeL3);
 
-for trainingIter = 1 : trainingIterationCount % loop over training iterations
-    fprintf('\nStarting training iteration %u from %u \n', trainingIter, trainingIterationCount);
+for trainingIter = 1 : numTrainIterL3 % loop over training iterations
+    fprintf('\nStarting training iteration %u from %u \n', trainingIter, numTrainIterL3);
     % loop over batches (training examples)
     
     for batchIter = 1 : batchIterationCount
 
-        startPosition = (batchIter - 1) * batchSize + 1;
-        endPosition = startPosition + batchSize - 1;
+        startPosition = (batchIter - 1) * batchSizeL3 + 1;
+        endPosition = startPosition + batchSizeL3 - 1;
         if endPosition > m
             endPosition = m;
         end
 
-        fprintf('\n training iteration (%u / %u): batch sub-iteration (%u / %u): start %u end %u from %u training samples \n', trainingIter, trainingIterationCount, batchIter, batchIterationCount, startPosition, endPosition, m);
+        fprintf('\n training iteration (%u / %u): batch sub-iteration (%u / %u): start %u end %u from %u training samples \n', trainingIter, numTrainIterL3, batchIter, batchIterationCount, startPosition, endPosition, m);
         
 %%======use caching for convolved and pooled features============        
         pooledFeaturesTempFile = strcat(datasetDir, tempDir, num2str(batchIter), '_pooledFeaturesTrain.mat');
@@ -224,18 +217,13 @@ for trainingIter = 1 : trainingIterationCount % loop over training iterations
             % File does not exist - do convolution and pooling
             fprintf('No file with pooled features for iteration %u. Do convolution and pooling ... \n', batchIter);
         
-            [shuffledX] = loadImageSet(shuffledSampleId(startPosition:endPosition), strcat(datasetDir, imgDir), img_w, img_h);
-            pooledFeaturesTrain = convolveAndPool(shuffledX, sae1OptTheta, hiddenSizeL2, img_h, img_w, patchSize, meanPatch, poolSize, convolutionsStepSize);
+            [shuffledX] = loadImageSet(sampleId(startPosition:endPosition), strcat(datasetDir, imgDir), imgW, imgH);
+            pooledFeaturesTrain = convolveAndPool(shuffledX, sae1OptTheta, hiddenSizeL2, imgH, imgW, patchSize, meanPatch, poolSize, convolutionsStepSize);
             save(pooledFeaturesTempFile, 'pooledFeaturesTrain');
         end
 %%======================================================================        
 
-%        fprintf('Pooled features (pooledFeaturesTrain) size ...\n')
-%        size(pooledFeaturesTrain)
-
-%        numTrainImages = size(shuffledX, 2)
-        
-        softmaxY = shuffledY(startPosition:endPosition, :);
+        softmaxY = y(startPosition:endPosition, :);
         numTrainImages = size(pooledFeaturesTrain, 2);
 
         % Reshape the pooledFeatures to form an input vector for softmax
@@ -258,9 +246,6 @@ for trainingIter = 1 : trainingIterationCount % loop over training iterations
     fprintf('Iteration %4i done - softmaxTheta saved', trainingIter);
 
 end; % for trainingIter = 1 : trainingIterationCount % loop over training iterations
-
-
-%}
 
 fprintf('Training complete. \n');
 

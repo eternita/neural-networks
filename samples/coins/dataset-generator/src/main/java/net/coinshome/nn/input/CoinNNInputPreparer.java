@@ -47,8 +47,9 @@ public class CoinNNInputPreparer {
 	private String TST_SET_CSV_FILE = null;
 	
 	private String NOT_DETECTED_IMG_DIR = null;
-	private String IMG_OUTPUT_DIR = null;
-	private String ORIG_IMG_OUTPUT_DIR = null;
+	private String COLOR_IMG_OUTPUT_DIR = null;
+	private String GRAY_IMG_OUTPUT_DIR = null;
+	private String GAU_IMG_OUTPUT_DIR = null;
 	
 	private static int MIN_DETECTED_IMAGES_FOR_COIN = 1;
 	private static String CSV_SPLITER = ",";
@@ -72,16 +73,21 @@ public class CoinNNInputPreparer {
 		CV_SET_CSV_FILE = OUT_WORKING_DIR + "/coin.cv.csv";
 		TST_SET_CSV_FILE = OUT_WORKING_DIR + "/coin.tst.csv";
 		
-		NOT_DETECTED_IMG_DIR = OUT_WORKING_DIR + "/img/not-detected";
-		IMG_OUTPUT_DIR = OUT_WORKING_DIR + "/img";
-		ORIG_IMG_OUTPUT_DIR = OUT_WORKING_DIR + "/img/origin";
+		NOT_DETECTED_IMG_DIR = OUT_WORKING_DIR + "/not-detected-images";
+		COLOR_IMG_OUTPUT_DIR = OUT_WORKING_DIR + "/img_color";
+		GRAY_IMG_OUTPUT_DIR = OUT_WORKING_DIR + "/img_grayscale";
+		GAU_IMG_OUTPUT_DIR = OUT_WORKING_DIR + "/img_gau";
 		
 		{
-			  File theDir = new File(IMG_OUTPUT_DIR);
+			  File theDir = new File(GRAY_IMG_OUTPUT_DIR);
 			  if (!theDir.exists()) 
 			    theDir.mkdir();  
 			  
-			  theDir = new File(ORIG_IMG_OUTPUT_DIR);
+			  theDir = new File(GAU_IMG_OUTPUT_DIR);
+			  if (!theDir.exists()) 
+			    theDir.mkdir();  
+			  
+			  theDir = new File(COLOR_IMG_OUTPUT_DIR);
 			  if (!theDir.exists()) 
 			    theDir.mkdir();  
 			  
@@ -175,6 +181,7 @@ public class CoinNNInputPreparer {
 				
 		processedCoinInstances = counters.get("processedCoinInstances");
 		processedImages = counters.get("processedImages");
+		System.out.println("Saved Coins " + coinIdxMap.size());
 		System.out.println("Saved CoinInstances " + processedCoinInstances);
 		System.out.println("Generaged Images " + processedImages);
 		return;
@@ -305,37 +312,51 @@ public class CoinNNInputPreparer {
 			// scale img - all output images should have the same dimension (width/height)
 			extrCoinImg = ImageUtils.scaleImage(extrCoinImg, IMG_OUTPUT_WIDTH, IMG_OUTPUT_HEIGHT);
 
-			// save original image (color) - just for convenience (not used in learning algorithm)
-			File origImgFile = new File(ORIG_IMG_OUTPUT_DIR, coinIdx + "_" + ciIdx + ".jpg");
-			ImageIO.write(extrCoinImg, "jpg", new FileOutputStream(origImgFile));
+//			// save original image (color) - just for convenience (not used in learning algorithm)
+//			File origImgFile = new File(COLOR_IMG_OUTPUT_DIR, coinIdx + "_" + ciIdx + ".jpg");
+//			ImageIO.write(extrCoinImg, "jpg", new FileOutputStream(origImgFile));
 			
 			List<BufferedImage> generatedImgs = ImageGenerator.generate(extrCoinImg);
 			
-/*			don't save it - it's duplicated in image generation: ImageGenerator.generate(extrCoinImg);
-			// save extracted image
-			File extrImgFile = new File(IMG_OUTPUT_DIR, completeImgIdx + ".jpg");
-			ImageIO.write(extrCoinImg, "jpg", new FileOutputStream(extrImgFile));
-			
-			imgIndexes.add("" + completeImgIdx);			
-*/			
+		
 			for (int imgIdx = 0; imgIdx < generatedImgs.size(); imgIdx++)
-//			for (int imgIdx = 0; imgIdx < 2; imgIdx++)
+//			for (int imgIdx = 0; imgIdx < 1; imgIdx++)
 			{
 				BufferedImage genImg = generatedImgs.get(imgIdx);
+				File genImgFile = null;
+
+				completeImgIdx = maxCoinVariance*maxCIVariance*coinIdx + maxCIVariance*ciIdx + (imgIdx + 1);
+				{
+					// save original image (color)
+					genImgFile = new File(COLOR_IMG_OUTPUT_DIR, completeImgIdx + ".jpg");
+					ImageIO.write(genImg, "jpg", new FileOutputStream(genImgFile));
+				}
 				
+				{// grayscale
+					// scale img - all output images should have the same dimension (width/height)
+//					genImg = ImageUtils.scaleImage(genImg, IMG_OUTPUT_WIDTH, IMG_OUTPUT_HEIGHT);
+					// convert to gray scale
+					genImg = ImageUtils.convert2grayScale(genImg);
+					
+					genImgFile = new File(GRAY_IMG_OUTPUT_DIR, completeImgIdx + ".jpg");
+					ImageIO.write(genImg, "jpg", new FileOutputStream(genImgFile));
+				}
+				
+
+				// do the same for gau
 				if (diffOfGaussianOutput)
 				{
+					genImg = generatedImgs.get(imgIdx);
 					// convert to Dif of Gausian
 					genImg = ImageUtils.detectEdges(genImg);
+					// scale img - all output images should have the same dimension (width/height)
+//					genImg = ImageUtils.scaleImage(genImg, IMG_OUTPUT_WIDTH, IMG_OUTPUT_HEIGHT);
+					// convert to gray scale
+					genImg = ImageUtils.convert2grayScale(genImg);
+					
+					genImgFile = new File(GAU_IMG_OUTPUT_DIR, completeImgIdx + ".jpg");
+					ImageIO.write(genImg, "jpg", new FileOutputStream(genImgFile));
 				}
-				// scale img - all output images should have the same dimension (width/height)
-				genImg = ImageUtils.scaleImage(genImg, IMG_OUTPUT_WIDTH, IMG_OUTPUT_HEIGHT);
-				// convert to gray scale
-				genImg = ImageUtils.convert2grayScale(genImg);
-				
-				completeImgIdx = maxCoinVariance*maxCIVariance*coinIdx + maxCIVariance*ciIdx + (imgIdx + 1);
-				File genImgFile = new File(IMG_OUTPUT_DIR, completeImgIdx + ".jpg");
-				ImageIO.write(genImg, "jpg", new FileOutputStream(genImgFile));
 				
 				imgIndexes.add("" + completeImgIdx);
 			}

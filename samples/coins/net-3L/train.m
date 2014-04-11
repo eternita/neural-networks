@@ -4,25 +4,25 @@ clear ; close all; clc % cleanup
 
 %% Setup the parameters - Check / set parameters before run
 
-graphDirName = 'logs'; % logs directory for output charts (debug only)
+tempDirName = 'temp'; % logs directory for output charts (debug only)
 
-mkdir(graphDirName);
+mkdir(tempDirName);
 
-% dataset directory
-datasetDir = 'E:/nn4coins/dataset-3_924_14_200_100_gau/';
-%datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-246_19338_293_400_200_gau-mexico/';
-img_w = 200; % image width
-img_h = 100; % image height
+datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-5_25_400_200/'; % dataset root dir
+imgDir = 'img_gau/'; % sub directory with images
+
+img_w = 400; % image width
+img_h = 200; % image height
 
 input_layer_size  = img_w * img_h;  % input layer size
 hidden_layer_size = 1000;           % hidden layer size
-num_output_labels = 3;             % output layer size, amount of coinIdx, from 1 to ...
+num_output_labels = 5;             % output layer size, amount of coinIdx, from 1 to ...
 
-lambda = 1; % weight decay term (regularization)
+lambda = 3; % weight decay term (regularization)
                           
-trainingIterationCount = 100; % amount of iterations over whole training set
+trainingIterationCount = 1000; % amount of iterations over whole training set
 
-batchSize=1000; % training sets in a mini-batch
+batchSize=330; % training sets in a mini-batch
 
 
 addpath ../libs/         % load libs
@@ -122,7 +122,7 @@ for trainingIter = 1 : trainingIterationCount % loop over training iterations
 
         fprintf('\n training iteration (%u / %u): batch sub-iteration (%u / %u): start %u end %u from %u \n', trainingIter, trainingIterationCount, batchIter, batchIterationCount, startPosition, endPosition, m);
         
-        [shuffledX] = loadImageSet(shuffledSampleId(startPosition:endPosition), strcat(datasetDir, 'img/'), img_w, img_h);
+        [shuffledX] = loadImageSet(shuffledSampleId(startPosition:endPosition), strcat(datasetDir, imgDir), img_w, img_h);
         
         %size(shuffledX)
         costFunction = @(p) nnCostFunction(p, ...
@@ -137,12 +137,12 @@ for trainingIter = 1 : trainingIterationCount % loop over training iterations
     end;
     %-- start visualizing --
     avgCostForIteration = sum(costForIteration)/size(costForIteration, 1);
-    cost_visual(trainingIter) = avgCostForIteration
+    cost_visual(trainingIter) = avgCostForIteration;
 
 %{
 h = figure;
 plot(cost_visual);
-print(h, '-djpeg', strcat(workingDir, graphDirName, '/', num2str(trainingIter), '_cost_func.jpg'));
+print(h, '-djpeg', strcat(workingDir, tempDirName, '/', num2str(trainingIter), '_cost_func.jpg'));
 %}    
     
     %-- end visualizing --

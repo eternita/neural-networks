@@ -35,7 +35,7 @@ public class ImageGenerator {
 
         // compose multiple images using various rotations
         rotate(srcImg, leftImg, rightImg, outImages);
-        
+/*        
         { // swap
             List<BufferedImage> swapImages = swap(leftImg, rightImg);
             leftImg = swapImages.get(0);
@@ -49,7 +49,7 @@ public class ImageGenerator {
         // rotate swaped
         // compose multiple images using various rotations
         rotate(srcImg, leftImg, rightImg, outImages);
-        
+//*/        
         
 		
 		return outImages;
@@ -58,55 +58,55 @@ public class ImageGenerator {
 	
 	private static void rotate(BufferedImage srcImg, BufferedImage leftImg, BufferedImage rightImg, List<BufferedImage> outImages)
 	{
-        for (int i = 0; i < MAX_ANGLE_DEVIATION; i = i+ANGLE_DEVIATION_STEP)
+        for (int i = ANGLE_DEVIATION_STEP; i < MAX_ANGLE_DEVIATION; i = i+ANGLE_DEVIATION_STEP)
         {
+//            outImages.add(
+//            		compose(
+//            				rotate(leftImg, i*Math.PI/180), 
+//            				rightImg, 
+//            				ImageUtils.deepCopy(srcImg)));
+//            outImages.add(
+//            		compose(
+//            				rotate(leftImg, -i*Math.PI/180), 
+//            				rightImg, 
+//            				ImageUtils.deepCopy(srcImg)));
+//            
+//
+//            outImages.add(
+//            		compose(
+//            				leftImg, 
+//            				rotate(rightImg, i*Math.PI/180), 
+//            				ImageUtils.deepCopy(srcImg)));
+//            outImages.add(
+//            		compose(
+//            				leftImg, 
+//            				rotate(rightImg, -i*Math.PI/180), 
+//            				ImageUtils.deepCopy(srcImg)));
+            
+            
             outImages.add(
             		compose(
             				rotate(leftImg, i*Math.PI/180), 
-            				rightImg, 
-            				ImageUtils.deepCopy(srcImg)));
-            outImages.add(
-            		compose(
-            				rotate(leftImg, -i*Math.PI/180), 
-            				rightImg, 
-            				ImageUtils.deepCopy(srcImg)));
-            
-
-            outImages.add(
-            		compose(
-            				leftImg, 
             				rotate(rightImg, i*Math.PI/180), 
             				ImageUtils.deepCopy(srcImg)));
-            outImages.add(
-            		compose(
-            				leftImg, 
-            				rotate(rightImg, -i*Math.PI/180), 
-            				ImageUtils.deepCopy(srcImg)));
-            
-            
-            outImages.add(
-            		compose(
-            				rotate(leftImg, i*Math.PI/180), 
-            				rotate(rightImg, i*Math.PI/180), 
-            				ImageUtils.deepCopy(srcImg)));
-            
-            outImages.add(
-            		compose(
-            				rotate(leftImg, -i*Math.PI/180), 
-            				rotate(rightImg, -i*Math.PI/180), 
-            				ImageUtils.deepCopy(srcImg)));
-            
             
             outImages.add(
             		compose(
             				rotate(leftImg, -i*Math.PI/180), 
-            				rotate(rightImg, i*Math.PI/180), 
-            				ImageUtils.deepCopy(srcImg)));
-            outImages.add(
-            		compose(
-            				rotate(leftImg, i*Math.PI/180), 
             				rotate(rightImg, -i*Math.PI/180), 
             				ImageUtils.deepCopy(srcImg)));
+            
+            
+//            outImages.add(
+//            		compose(
+//            				rotate(leftImg, -i*Math.PI/180), 
+//            				rotate(rightImg, i*Math.PI/180), 
+//            				ImageUtils.deepCopy(srcImg)));
+//            outImages.add(
+//            		compose(
+//            				rotate(leftImg, i*Math.PI/180), 
+//            				rotate(rightImg, -i*Math.PI/180), 
+//            				ImageUtils.deepCopy(srcImg)));
             
             
         } // for (int i = 0; i < MAX_ANGLE_DEVIATION; i++)
