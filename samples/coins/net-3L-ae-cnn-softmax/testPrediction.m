@@ -1,4 +1,4 @@
-function testPrediction(imageDir, datasetFile, imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTestSamples)
+function [prediction] = testPrediction(imageDir, datasetFile, imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTestSamples, maxTopPredictions)
 
 %TESTPREDICTION Implements the test on specific dataset
 %
@@ -13,7 +13,7 @@ function testPrediction(imageDir, datasetFile, imgW, imgH, patchSize, poolSize, 
 %   hiddenSizeL1
 %   softmaxTheta
 %   maxTestSamples
-%
+%   maxTopPredictions
 
 csvdata = csvread(datasetFile);
 
@@ -39,25 +39,19 @@ fprintf('\n    %u items in dataset ', numTestImages);
 fprintf('\n    sae1OptTheta size %u X %u ', size(sae1OptTheta, 1), size(sae1OptTheta, 2));
 fprintf('\n    meanPatch size %u X %u ', size(meanPatch, 1), size(meanPatch, 2));
 
-[X] = loadImageSet(sampleId, imageDir, imgW, imgH);
+[X] = loadImageSet(sampleId, imageDir, imgW, imgH); % images
 
-%visibleSize = patchSize * patchSize;
+[pred] = netPredict(X, imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTopPredictions);
 
-pooledFeaturesTest = convolveAndPool(X, sae1OptTheta, hiddenSizeL2, imgH, imgW, patchSize, meanPatch, poolSize, convolutionsStepSize);
+prediction = [sampleId, pred];
 
 
-softmaxX = permute(pooledFeaturesTest, [1 3 4 2]);
-inputSize = numel(pooledFeaturesTest) / numTestImages;
-fprintf('\n    inputSize %u ', inputSize);
+% accumulate predictions over maxTopPredictions
+acc = zeros(numTestImages, 1);
+for i = 1:maxTopPredictions
+    acc = acc + (pred(:, i) == softmaxY(:));
+end
 
-softmaxX = reshape(softmaxX, inputSize, numTestImages);
-
-fprintf('\n    softmaxTheta size %u X %u ', size(softmaxTheta, 1), size(softmaxTheta, 2));
-fprintf('\n    softmaxX size %u X %u ', size(softmaxX, 1), size(softmaxX, 2));
-
-[pred] = softmaxPredict(softmaxTheta, softmaxX);
-
-acc = (pred(:) == softmaxY(:));
 acc = sum(acc) / size(acc, 1);
 fprintf('\nAccuracy: %2.3f%%\n', acc * 100);
 

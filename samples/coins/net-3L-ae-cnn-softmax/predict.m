@@ -1,4 +1,4 @@
-% Runs prediction test on TRAINING / CV / TEST datasets
+% Runs prediction on unlabeled data
 
 clear ; close all; clc % cleanup 
 
@@ -8,11 +8,10 @@ clear ; close all; clc % cleanup
 %datasetDir = 'E:/nn4coins/dataset-3_924_14_200_100_gau/';
 datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-247_297_400_200-mexico/'; % dataset root dir
 
-imageDir = strcat(datasetDir, 'img_grayscale/');
+imageDir = strcat(datasetDir, 'ci_images/'); % subdir with unlabeled images
 tempDir = 'temp/'; % for prediction export
 mkdir(strcat(datasetDir, tempDir)); % create temp dir - if doesn't exist
 
-maxTestSamples = 5; % if test set is large - create subset 
 maxTopPredictions = 3;
 
 imgW = 400; % image width
@@ -39,17 +38,41 @@ b = sae1OptTheta(2*hiddenSizeL2*visibleSizeL1+1:2*hiddenSizeL2*visibleSizeL1+hid
 
 fprintf('sae1OptTheta: %u x %u meanPatch: %u x %u \n', size(W, 2), size(W, 1), size(meanPatch, 2), size(meanPatch, 1));
 fprintf('softmaxTheta: %u x %u \n', size(softmaxTheta, 2), size(softmaxTheta, 1));
+%% ========================
+% loading image files
+imgDirFullPath = imageDir; % dir with unlabeled images
+imgFiles = dir(fullfile(imgDirFullPath, '*.jpg')); % img files
+m = length(imgFiles); % number of images
+
+fprintf('Loading %u images for prediction ...\n', m);
+unlabeledImagesX = zeros(imgW*imgH, m); % unlabeled images
+
+sampleId = cell(length(imgFiles), 1);
+
+% loop over files and load images into matrix
+for idx = 1:m
+    gImg = imread([imgDirFullPath imgFiles(idx).name]);
+    imgV = reshape(gImg, 1, imgW*imgH); % unroll       
+    unlabeledImagesX(:, idx) = imgV; 
+    sampleId{idx, 1} = imgFiles(idx).name;
+end
+
+%% ========================
+% run prediction
+[pred] = netPredict(unlabeledImagesX, imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTopPredictions);
+
+%% ========================
+% save prediction to file
+fid = fopen(strcat(datasetDir, tempDir, 'coin.tst_predict.csv'),'w');
+for ii=1:m,  %% 1 -> 47165 rows
+    fprintf(fid, '%s', imgFiles(ii).name);
+    for i=1:size(pred, 2), %% 1 -> 26 columns
+%        fprintf(fid, ',%u', data{ii, i}(1));
+        fprintf(fid, ',%u', pred(ii, i));
+    end
+    fprintf(fid,'\n');
+end
+fclose(fid);
 
 
-% prediction test on training dataset 
-prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.tr.csv'), imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTestSamples, maxTopPredictions);
-dlmwrite(strcat(datasetDir, tempDir, 'coin.tr_predict.csv'), prediction, 'precision',15); % export prediction
-
-% prediction test on cross validation dataset
-prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.cv.csv'), imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTestSamples, maxTopPredictions);
-dlmwrite(strcat(datasetDir, tempDir, 'coin.cv_predict.csv'), prediction, 'precision',15); % export prediction
-
-% prediction test on test dataset
-prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.tst.csv'), imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTestSamples, maxTopPredictions);
-dlmwrite(strcat(datasetDir, tempDir, 'coin.tst_predict.csv'), prediction, 'precision',15); % export prediction
 
