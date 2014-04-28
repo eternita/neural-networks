@@ -5,24 +5,23 @@ clear ; close all; clc % cleanup
 %% =========== Initialization =============
 % Check / setup parameters before run
 
-%datasetDir = 'E:/nn4coins/dataset-3_924_14_200_100_gau/';
-datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-247_297_400_200-mexico/'; % dataset root dir
+datasetDir = 'C:/Develop/_n4j-nn-data/dataset-30_400_200_x31/'; % dataset root dir
 
 imageDir = strcat(datasetDir, 'img_grayscale/');
 tempDir = 'temp/'; % for prediction export
 mkdir(strcat(datasetDir, tempDir)); % create temp dir - if doesn't exist
 
-maxTestSamples = 5; % if test set is large - create subset 
+maxTestSamples = 60; % if test set is large - create subset 
 maxTopPredictions = 3;
 
 imgW = 400; % image width
 imgH = 200; % image height
 
-patchSize = 6; % patch size/dimention for L2 feature extraction (using auto-encodes)
+patchSize = 8; % patch size/dimention for L2 feature extraction (using auto-encodes)
 visibleSizeL1 = patchSize * patchSize; % number of input units for the patch
 poolSize = 15; % used for pooling convolved features
 convolutionsStepSize = 50;
-hiddenSizeL2 = 600;     % L2 hidden layer size
+hiddenSizeL2 = 100;     % L2 hidden layer size
 
 addpath ../libs/         % load libs
 
@@ -42,7 +41,7 @@ fprintf('softmaxTheta: %u x %u \n', size(softmaxTheta, 2), size(softmaxTheta, 1)
 
 
 % prediction test on training dataset 
-prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.tr.csv'), imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTestSamples, maxTopPredictions);
+prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.tr.csv'), imgW, imgH, patchSize, poolSize, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTestSamples, 1);
 dlmwrite(strcat(datasetDir, tempDir, 'coin.tr_predict.csv'), prediction, 'precision',15); % export prediction
 
 % prediction test on cross validation dataset

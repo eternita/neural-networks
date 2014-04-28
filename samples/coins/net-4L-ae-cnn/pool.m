@@ -29,7 +29,7 @@ for featureNum = 1:numFeatures
         patch = convolvedFeatures(featureNum, imageNum, ...
                       offsetRow:offsetRow + poolDim-1, ...
                       offsetCol:offsetCol+poolDim-1);
-        pooledFeatures(featureNum, imageNum, poolRow, poolCol) = mean(patch(:));
+        pooledFeatures(featureNum, imageNum, poolRow, poolCol) = max(patch(:));
       end
     end
   end

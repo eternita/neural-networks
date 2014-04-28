@@ -3,7 +3,7 @@ clear ; close all; clc % cleanup
 %% Configuration
 %  ! Setup and check all parameters before run
 
-datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-5_25_400_200/'; % dataset root dir
+datasetDir = 'C:/Develop/_n4j-nn-data/dataset-30_400_200_x31/'; % dataset root dir
 trainSetCSVFile = 'coin.tr.shuffled.csv'; % this file will be generated from 'coin.tr.csv'
 
 unlabeledImgDir = 'img_unlabeled/'; % sub directory with images for auto-encoder training (unlabeled/for unsupervised feature extraction)
@@ -14,11 +14,11 @@ imgW = 400; % image width, ( width >= height )
 imgH = 200; % image height
 
 % !! WHEN CHANGE batchSizeL3 - CLEAN UP / DELETE TEMP DIRECTORY (tempDir)
-batchSizeL3 = 100; % batch size for L3 mini-batch algorithm
+batchSizeL3 = 70; % batch size for L3 mini-batch algorithm
 numTrainIterL3 = 400; % L3 amount of iterations over whole training set
-numClassesL3 = 5; % amount of output lables, classes (e.g. coins)
+numClassesL3 = 30; % amount of output lables, classes (e.g. coins)
 
-hiddenSizeL2 = 600;     % L2 hidden layer size
+hiddenSizeL2 = 100;     % L2 hidden layer size
 
 patchSize = 6; % patch size/dimention for L2 feature extraction (using auto-encodes)
 saeNumPatches = 10000; % amount of patches for auto-encoder training
@@ -152,6 +152,7 @@ W = reshape(sae1OptTheta(1:visibleSizeL1 * hiddenSizeL2), hiddenSizeL2, visibleS
 b = sae1OptTheta(2*hiddenSizeL2*visibleSizeL1+1:2*hiddenSizeL2*visibleSizeL1+hiddenSizeL2);
 display_network(W'); % L2
 
+clear patches
 %print -djpeg l2_sae_features.jpg   % save the visualization to a file 
 
 %pause;
@@ -173,7 +174,9 @@ fprintf('Amount of training examples: %u \n', m);
 %% L3 (Softmax) layer Initialization 
 
 %inputSize = 600 * 13 * 26;
-inputSizeL3 = hiddenSizeL2 * ((imgH - patchSize + 1) / poolSize) * 2 * ((imgH - patchSize + 1) / poolSize);
+%inputSizeL3 = hiddenSizeL2 * ((imgH - patchSize + 1) / poolSize) * 2 * ((imgH - patchSize + 1) / poolSize);
+inputSizeL3 = hiddenSizeL2 * floor((imgH - patchSize + 1) / poolSize) * floor((imgW - patchSize + 1) / poolSize);
+
 
 if exist(strcat(datasetDir, 'SOFTMAX_THETA.mat'), 'file')
     % SOFTMAX_THETA.mat file exists. 
@@ -193,10 +196,13 @@ fprintf('\nTraining L3 with mini batch ... \n')
 
 batchIterationCount = ceil(m / batchSizeL3);
 
+costs = zeros(numTrainIterL3, 1); % cost func over training iterations
+
 for trainingIter = 1 : numTrainIterL3 % loop over training iterations
     fprintf('\nStarting training iteration %u from %u \n', trainingIter, numTrainIterL3);
     % loop over batches (training examples)
     
+    iterCost = 0;
     for batchIter = 1 : batchIterationCount
 
         startPosition = (batchIter - 1) * batchSizeL3 + 1;
@@ -236,17 +242,37 @@ for trainingIter = 1 : numTrainIterL3 % loop over training iterations
                                    numClassesL3, inputSizeL3, softmaxLambda, ...
                                    softmaxX, softmaxY), ...                                   
                               theta, softmaxOptions);        
-        cost
+                          
+        iterCost = iterCost + cost;
     end; % for batchIter = 1 : batchIterationCount
+    iterCost = iterCost/batchIterationCount;
+    costs(trainingIter) = iterCost;
     
     % Fold softmaxTheta into a nicer format
     softmaxTheta = reshape(theta, numClassesL3, inputSizeL3);
     % save softmaxTheta - can be used if training cycle interrupted 
     save(strcat(datasetDir, 'SOFTMAX_THETA.mat'), 'softmaxTheta');
-    fprintf('Iteration %4i done - softmaxTheta saved', trainingIter);
+    fprintf('\nIteration %4i done - softmaxTheta saved. Average Cost is %4.4f \n', trainingIter, iterCost);
 
+%-------- debug info ------------    
+    softmaxLambdaTempFile = strcat(datasetDir, tempDir, 'costs_4_softmaxLambda_', num2str(softmaxLambda), '.mat');
+    save(softmaxLambdaTempFile, 'costs');
+    figure(2);
+    plot(costs);
+%-------- debug info ------------    
 end; % for trainingIter = 1 : trainingIterationCount % loop over training iterations
 
 fprintf('Training complete. \n');
 
 %%======================================================================
+% Debug tuning data
+
+% save costs for specific 'softmaxLambda' value
+softmaxLambdaTempFile = strcat(datasetDir, tempDir, 'costs_4_softmaxLambda_', num2str(softmaxLambda), '.mat');
+save(softmaxLambdaTempFile, 'costs');
+
+% plot cost function over train iterations
+xlabel('Training iterations');
+ylabel('Cost function');
+title('Cost function over training iterations');
+plot(costs);

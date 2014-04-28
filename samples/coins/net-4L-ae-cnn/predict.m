@@ -6,10 +6,10 @@ clear ; close all; clc % cleanup
 % Check / setup parameters before run
 
 %datasetDir = 'E:/nn4coins/dataset-3_924_14_200_100_gau/';
-datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-247_297_400_200-mexico/'; % dataset root dir
+datasetDir = 'C:/Develop/src/pavlikovkskiy/chn/data/dataset-247_297_400_200-mexico_x7/'; % dataset root dir
 
 imageDir = strcat(datasetDir, 'ci_images/'); % subdir with unlabeled images
-tempDir = 'temp/'; % for prediction export
+tempDir = 'temp-pro/'; % for prediction export
 mkdir(strcat(datasetDir, tempDir)); % create temp dir - if doesn't exist
 
 maxTopPredictions = 3;
