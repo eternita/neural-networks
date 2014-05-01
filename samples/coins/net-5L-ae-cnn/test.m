@@ -13,44 +13,25 @@ tempDir = 'temp/'; % for prediction export
 maxTestSamples = 60; % if test set is large - create subset 
 maxTopPredictions = 3;
 
-imgW = 400; % image width
-imgH = 200; % image height
+% configs are in separate file to easy share between train.m / test.m
+config;
 
-cnn = cell(2, 1);
+fprintf(' Parameters for L2  \n');
+cnn{1}
+fprintf(' Parameters for L3  \n');
+cnn{2}
 
-% L2
-cnn{1}.inputWidth = imgW;
-cnn{1}.inputHeight = imgH;
-cnn{1}.inputChannels = 1;
-cnn{1}.features = 100;
-cnn{1}.patchSize = 6;
-cnn{1}.poolSize = 5;
-cnn{1}.numPatches = 10000;
-cnn{1}.inputVisibleSize = cnn{1}.patchSize * cnn{1}.patchSize * cnn{1}.inputChannels;
+% show matrix size transformation between layers
+fprintf('\nL1 -> L2  (%u X %u X %u) -> (%u X %u X %u) / (%u -> %u) \n', cnn{1}.inputWidth, cnn{1}.inputHeight, cnn{1}.inputChannels, cnn{1}.outputWidth, cnn{1}.outputHeight, cnn{1}.outputChannels, ...
+                                        cnn{1}.inputWidth * cnn{1}.inputHeight * cnn{1}.inputChannels, cnn{1}.outputWidth * cnn{1}.outputHeight * cnn{1}.outputChannels);
+                                    
+fprintf('\nL2 -> L3 (%u X %u X %u) -> (%u X %u X %u) / (%u -> %u) \n', cnn{2}.inputWidth, cnn{2}.inputHeight, cnn{2}.inputChannels, cnn{2}.outputWidth, cnn{2}.outputHeight, cnn{2}.outputChannels, ...
+                                        cnn{2}.inputWidth * cnn{2}.inputHeight * cnn{2}.inputChannels, cnn{2}.outputWidth * cnn{2}.outputHeight * cnn{2}.outputChannels);
+                                    
+%fprintf('\nL3 -> L4  (%u X %u X %u) -> %u / (%u -> %u) \n', cnn{2}.outputWidth * cnn{2}.outputHeight * cnn{2}.outputChannels, numClassesL4);
 
-cnn{1}.outputWidth = floor((cnn{1}.inputWidth - cnn{1}.patchSize + 1) / cnn{1}.poolSize);
-cnn{1}.outputHeight = floor((cnn{1}.inputHeight - cnn{1}.patchSize + 1) / cnn{1}.poolSize);
-cnn{1}.outputChannels = cnn{1}.features;
-cnn{1}.outputSize = cnn{1}.outputWidth * cnn{1}.outputHeight * cnn{1}.outputChannels;
+fprintf('\nL4 -> L5 %u -> %u \n', cnn{2}.outputWidth * cnn{2}.outputHeight * cnn{2}.outputChannels, numClassesL4);
 
-% L3
-cnn{2}.inputWidth = cnn{1}.outputWidth;
-cnn{2}.inputHeight = cnn{1}.outputHeight;
-cnn{2}.inputChannels = cnn{1}.outputChannels;
-cnn{2}.features = 200;
-cnn{2}.patchSize = 3;
-cnn{2}.poolSize = 3;
-cnn{2}.numPatches = 10000;
-cnn{2}.inputVisibleSize = cnn{2}.patchSize * cnn{2}.patchSize * cnn{2}.inputChannels;
-
-cnn{2}.outputWidth = floor((cnn{2}.inputWidth - cnn{2}.patchSize + 1) / cnn{2}.poolSize);
-cnn{2}.outputHeight = floor((cnn{2}.inputHeight - cnn{2}.patchSize + 1) / cnn{2}.poolSize);
-cnn{2}.outputChannels = cnn{2}.features;
-cnn{2}.outputSize = cnn{2}.outputWidth * cnn{2}.outputHeight * cnn{2}.outputChannels;
-
-convolutionsStepSize = 50;
-
-addpath ../libs/         % load libs
 
 %% ========================
 % loadinng matrixes
@@ -81,6 +62,7 @@ fprintf('softmaxTheta: %u x %u \n', size(softmaxTheta, 2), size(softmaxTheta, 1)
 
 prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.cv.csv'), cnn, softmaxTheta, convolutionsStepSize, maxTestSamples, maxTopPredictions);
 prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.tst.csv'), cnn, softmaxTheta, convolutionsStepSize, maxTestSamples, maxTopPredictions);
+prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.tr.csv'), cnn, softmaxTheta, convolutionsStepSize, maxTestSamples, 1);
 
 % prediction test on cross validation dataset
 %prediction = testPrediction(imageDir, strcat(datasetDir, 'coin.cv.csv'), imgW, imgH, patchSizeL2, poolSizeL2, sae1OptTheta, meanPatch, hiddenSizeL2, softmaxTheta, convolutionsStepSize, maxTestSamples, maxTopPredictions);

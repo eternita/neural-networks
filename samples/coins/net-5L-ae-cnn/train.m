@@ -10,73 +10,24 @@ unlabeledImgDir = 'img_unlabeled/'; % sub directory with images for auto-encoder
 imgDir = 'img_grayscale/'; % sub directory with images
 tempDir = 'temp/'; % for pooled features used with mini batch
 
-imgW = 400; % image width, ( width >= height )
-imgH = 200; % image height
-
-cnn = cell(2, 1);
-
-% L2
-cnn{1}.inputWidth = imgW;
-cnn{1}.inputHeight = imgH;
-cnn{1}.inputChannels = 1;
-cnn{1}.features = 100;
-cnn{1}.patchSize = 6;
-cnn{1}.poolSize = 5;
-cnn{1}.numPatches = 10000;
-cnn{1}.inputVisibleSize = cnn{1}.patchSize * cnn{1}.patchSize * cnn{1}.inputChannels;
-
-cnn{1}.outputWidth = floor((cnn{1}.inputWidth - cnn{1}.patchSize + 1) / cnn{1}.poolSize);
-cnn{1}.outputHeight = floor((cnn{1}.inputHeight - cnn{1}.patchSize + 1) / cnn{1}.poolSize);
-cnn{1}.outputChannels = cnn{1}.features;
-cnn{1}.outputSize = cnn{1}.outputWidth * cnn{1}.outputHeight * cnn{1}.outputChannels;
-
-% L3
-cnn{2}.inputWidth = cnn{1}.outputWidth;
-cnn{2}.inputHeight = cnn{1}.outputHeight;
-cnn{2}.inputChannels = cnn{1}.outputChannels;
-cnn{2}.features = 200;
-cnn{2}.patchSize = 3;
-cnn{2}.poolSize = 3;
-cnn{2}.numPatches = 10000;
-cnn{2}.inputVisibleSize = cnn{2}.patchSize * cnn{2}.patchSize * cnn{2}.inputChannels;
-
-cnn{2}.outputWidth = floor((cnn{2}.inputWidth - cnn{2}.patchSize + 1) / cnn{2}.poolSize);
-cnn{2}.outputHeight = floor((cnn{2}.inputHeight - cnn{2}.patchSize + 1) / cnn{2}.poolSize);
-cnn{2}.outputChannels = cnn{2}.features;
-cnn{2}.outputSize = cnn{2}.outputWidth * cnn{2}.outputHeight * cnn{2}.outputChannels;
-
-inputSizeL4 = cnn{2}.outputSize; 
-
-% !! WHEN CHANGE batchSizeL3 - CLEAN UP / DELETE TEMP DIRECTORY (tempDir)
-batchSize = 210; % batch size for L3 mini-batch algorithm
-numTrainIterL4 = 200; % L3 amount of iterations over whole training set
-numClassesL4 = 30; % amount of output lables, classes (e.g. coins)
-
-saeSparsityParam = 0.01;   % desired average activation of the hidden units.
-saeLambda = 0.003;     % weight decay for SAE (sparse auto-encoders)       
-saeBeta = 3;            % weight of sparsity penalty term       
-
-addpath ../libs/         % load libs
-addpath ../libs/minFunc/
-
-convolutionsStepSize = 50;
-
-softmaxLambda = 1e-4; % weight decay for L3
-
-%  Use minFunc to minimize cost functions
-saeOptions.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.
-saeOptions.maxIter = 800;	  % Maximum number of iterations of L-BFGS to run 
-saeOptions.display = 'on';
-
-softmaxOptions.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.
-softmaxOptions.maxIter = 1; % update minFunc confugs for mini batch 
-softmaxOptions.display = 'on';
+% configs are in separate file to easy share between train.m / test.m
+config;
 
 fprintf(' Parameters for L2  \n');
 cnn{1}
 fprintf(' Parameters for L3  \n');
 cnn{2}
 
+% show matrix size transformation between layers
+fprintf('\nL1 -> L2  (%u X %u X %u) -> (%u X %u X %u) / (%u -> %u) \n', cnn{1}.inputWidth, cnn{1}.inputHeight, cnn{1}.inputChannels, cnn{1}.outputWidth, cnn{1}.outputHeight, cnn{1}.outputChannels, ...
+                                        cnn{1}.inputWidth * cnn{1}.inputHeight * cnn{1}.inputChannels, cnn{1}.outputWidth * cnn{1}.outputHeight * cnn{1}.outputChannels);
+                                    
+fprintf('\nL2 -> L3 (%u X %u X %u) -> (%u X %u X %u) / (%u -> %u) \n', cnn{2}.inputWidth, cnn{2}.inputHeight, cnn{2}.inputChannels, cnn{2}.outputWidth, cnn{2}.outputHeight, cnn{2}.outputChannels, ...
+                                        cnn{2}.inputWidth * cnn{2}.inputHeight * cnn{2}.inputChannels, cnn{2}.outputWidth * cnn{2}.outputHeight * cnn{2}.outputChannels);
+                                    
+%fprintf('\nL3 -> L4  (%u X %u X %u) -> %u / (%u -> %u) \n', cnn{2}.outputWidth * cnn{2}.outputHeight * cnn{2}.outputChannels, numClassesL4);
+
+fprintf('\nL4 -> L5 %u -> %u \n', cnn{2}.outputWidth * cnn{2}.outputHeight * cnn{2}.outputChannels, numClassesL4);
 
 %% Initializatoin
 
@@ -177,9 +128,10 @@ else
 
     save(strcat(datasetDir, tempDir, 'L2_SAE_FEATURES.mat'), 'sae2OptTheta', 'meanPatchL2');
 end
-    
+
 % Visualization Sparser Autoencoder Features to see that the features look good
 W = reshape(sae2OptTheta(1:cnn{1}.inputVisibleSize * cnn{1}.features), cnn{1}.features, cnn{1}.inputVisibleSize);
+size(W)    
 % b = sae2OptTheta(2 * cnn{1}.features * cnn{1}.inputVisibleSize + 1 : 2 * cnn{1}.features * cnn{1}.inputVisibleSize + cnn{1}.features);
 display_network(W'); % L2
 
@@ -267,8 +219,11 @@ end
     
 % Visualization Sparser Autoencoder Features to see that the features look good
 W = reshape(sae3OptTheta(1 : cnn{2}.inputVisibleSize * cnn{2}.features), cnn{2}.features, cnn{2}.inputVisibleSize);
+%W = reshape(sae2OptTheta(1 : cnn{1}.inputVisibleSize * cnn{1}.features), cnn{1}.features, cnn{1}.inputVisibleSize);
 %b = sae3OptTheta(2 * cnn{2}.features * cnn{2}.inputVisibleSize + 1 : 2 * cnn{2}.features * cnn{2}.inputVisibleSize + cnn{2}.features);
-display_network(W'); % L2
+
+size(W)
+%display_network(W'); % L2
 
 %pause;
 %%======================================================================
@@ -305,6 +260,8 @@ end; % for batchIter = 1 : batchIterationCount
 %% L4 (Softmax) Training
 fprintf('\nL4 training  ... \n')
 
+%inputSizeL4 = cnn{1}.outputSize; 
+
 if exist(strcat(datasetDir, tempDir, 'L4_SOFTMAX_THETA.mat'), 'file')
     % SOFTMAX_THETA.mat file exists. 
     fprintf('\nLoading softmax theta from %s  \n', strcat(datasetDir, tempDir, 'L4_SOFTMAX_THETA.mat'));
@@ -337,12 +294,15 @@ for trainingIter = 1 : numTrainIterL4 % loop over training iterations
         
         % loads cpFeaturesL3
         load(strcat(datasetDir, tempDir, 'L3_CP_FEATURES_', num2str(batchIter), '.mat')); % file must exist from previous iterations
+%        load(strcat(datasetDir, tempDir, 'L2_CP_FEATURES_', num2str(batchIter), '.mat')); % file must exist from previous iterations
         
         % Reshape the pooledFeatures to form an input vector for softmax
-%        softmaxX = permute(cpFeaturesL3, [1 3 4 2]);
         softmaxX = permute(cpFeaturesL3, [4 3 1 2]); % W x H x Ch x tr_num
-
         numTrainImages = size(cpFeaturesL3, 2);
+
+%        softmaxX = permute(cpFeaturesL2, [4 3 1 2]); % W x H x Ch x tr_num
+%        numTrainImages = size(cpFeaturesL2, 2);
+        
         softmaxX = reshape(softmaxX, inputSizeL4, numTrainImages);
         
         softmaxY = y(startPosition:endPosition, :);
@@ -364,7 +324,7 @@ for trainingIter = 1 : numTrainIterL4 % loop over training iterations
     fprintf('\nIteration %4i done - softmaxTheta saved. Average Cost is %4.4f \n', trainingIter, iterCost);
 
 %-------- debug info ------------    
-    softmaxLambdaTempFile = strcat(datasetDir, tempDir, 'costs_4_softmaxLambda_', num2str(softmaxLambda), '.mat');
+    softmaxLambdaTempFile = strcat(datasetDir, tempDir, 'L4_costs_softmaxLambda_', num2str(softmaxLambda), '.mat');
     save(softmaxLambdaTempFile, 'costs');
     figure(2);
     xlabel('Training iterations');

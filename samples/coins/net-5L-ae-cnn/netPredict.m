@@ -19,24 +19,25 @@ cpFeaturesL2 = convolveAndPool(X, cnn{1}.theta, cnn{1}.features, ...
                 cnn{1}.patchSize, cnn{1}.meanPatch, cnn{1}.poolSize, convolutionsStepSize);
 
 outL2 = permute(cpFeaturesL2, [4 3 1 2]);
-X = reshape(outL2, cnn{1}.outputSize, numTrainImages);
+X = reshape(outL2, cnn{1}.outputSize, numTestImages);
+
 
 fprintf('\nL3  (%u X %u X %u) -> (%u X %u X %u) \n', cnn{2}.inputWidth, cnn{2}.inputHeight, cnn{2}.inputChannels, cnn{2}.outputWidth, cnn{2}.outputHeight, cnn{2}.outputChannels);
 cpFeaturesL3 = convolveAndPool(X, cnn{2}.theta, cnn{2}.features, ...
                 cnn{2}.inputHeight, cnn{2}.inputWidth, cnn{2}.inputChannels, ...
                 cnn{2}.patchSize, cnn{2}.meanPatch, cnn{2}.poolSize, convolutionsStepSize);
 
-softmaxX = permute(cpFeaturesL3, [4 3 1 2]); % W x H x Ch x tr_num
+X = permute(cpFeaturesL3, [4 3 1 2]); % W x H x Ch x tr_num
 
 inputSizeL4 = cnn{2}.outputSize; 
 fprintf('\n    inputSize %u ', inputSizeL4);
 
-softmaxX = reshape(softmaxX, inputSizeL4, numTestImages);
+X = reshape(X, inputSizeL4, numTestImages);
 
-fprintf('\n    softmaxTheta size %u X %u ', size(softmaxTheta, 1), size(softmaxTheta, 2));
-fprintf('\n    softmaxX size %u X %u \n', size(softmaxX, 1), size(softmaxX, 2));
+fprintf('\nL4  %u -> %u \n', size(softmaxTheta, 2), size(softmaxTheta, 1));
+%fprintf('\n    softmaxX size %u X %u \n', size(X, 1), size(X, 2));
 
-[prediction] = softmaxPredict(softmaxTheta, softmaxX, maxTopPredictions);
+[prediction] = softmaxPredict(softmaxTheta, X, maxTopPredictions);
 
 
 %% -----------------------------------------------------
