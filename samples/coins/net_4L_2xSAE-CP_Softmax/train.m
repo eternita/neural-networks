@@ -171,21 +171,43 @@ fprintf('\nL3 training (patches extraction, SAE training, convelution & pooling)
 
 %% L3 Patches for auto-encoders training
 fprintf('\nL3 - patches extraction for SAE training ...\n')
+saeL3PatchesFile = strcat(datasetDir, tempDir, 'L3_PATCHES.mat');
 
-
-%load cpFeaturesL2
-for batchIter = 1 : batchIterationCount
-
-    cpFeaturesL2File = strcat(datasetDir, tempDir, 'L2_CP_FEATURES_', num2str(batchIter), '.mat');
-    load(cpFeaturesL2File);
-    % cpFeaturesL2_all 
+if exist(saeL3PatchesFile, 'file')
+    % PATCHES.mat file exists. 
+    fprintf('Loading patches for sparse auto-encoder training from %s  \n', saeL3PatchesFile);
+    load(saeL3PatchesFile);
+else
+    % PATCHES.mat File does not exist. do generation
+    fprintf('Cant load patches for sparse auto-encoder training from %s  \n', saeL3PatchesFile);
+    fprintf('  Do patch geenration \n');
     
-end; % for batchIter = 1 : batchIterationCount
-% Reshape cpFeaturesL2 
-numTrainImages = size(cpFeaturesL2, 2);
-outL2 = permute(cpFeaturesL2, [4 3 1 2]); % W x H x Ch x tr_num
+    numPatches = floor(cnn{2}.numPatches / batchIterationCount); % get some patches from every batch iteration
 
-[patches, meanPatchL3] = getPatches2(outL2, cnn{2}.patchSize, cnn{2}.numPatches);
+    for batchIter = 1 : batchIterationCount
+        %load cpFeaturesL2
+        cpFeaturesL2File = strcat(datasetDir, tempDir, 'L2_CP_FEATURES_', num2str(batchIter), '.mat');
+        load(cpFeaturesL2File);
+        % Reshape cpFeaturesL2 
+        numTrainImages = size(cpFeaturesL2, 2);
+        outL2 = permute(cpFeaturesL2, [4 3 1 2]); % W x H x Ch x tr_num
+        [patchesThis, meanPatchL3This] = getPatches2(outL2, cnn{2}.patchSize, numPatches);
+                
+        if 1 == batchIter
+            patches = patchesThis;
+            meanPatchL3 = meanPatchL3This;
+        else 
+            patches = [patches patchesThis];
+            meanPatchL3 = [meanPatchL3 meanPatchL3This];
+        end
+
+    end; % for batchIter = 1 : batchIterationCount
+    meanPatchL3 = mean(meanPatchL3, 2);
+
+    save(saeL3PatchesFile, 'patches', 'meanPatchL3');
+    display_network(patches(:,randi(size(patches,2),200,1)));
+    fprintf('Patches generation complete ...\n');
+end
 
 %%======================================================================
 %% L3 SAE training
@@ -236,6 +258,13 @@ for batchIter = 1 : batchIterationCount
     if ~exist(pooledFeaturesTempFile, 'file')
         % File does not exist - do convolution and pooling
         fprintf('\nNo file with pooled features for iteration %u. Do convolution and pooling ... \n', batchIter);
+        %load cpFeaturesL2
+        cpFeaturesL2File = strcat(datasetDir, tempDir, 'L2_CP_FEATURES_', num2str(batchIter), '.mat');
+        load(cpFeaturesL2File);
+        % Reshape cpFeaturesL2 
+        numTrainImages = size(cpFeaturesL2, 2);
+        outL2 = permute(cpFeaturesL2, [4 3 1 2]); % W x H x Ch x tr_num
+        
         shuffledX = reshape(outL2, cnn{1}.outputSize, numTrainImages);
         
         % feedforward using sae2OptTheta, convolve and pool
@@ -288,9 +317,11 @@ for trainingIter = 1 : numTrainIterL4 % loop over training iterations
         
         % Reshape the pooledFeatures to form an input vector for softmax
         softmaxX = permute(cpFeaturesL3, [4 3 1 2]); % W x H x Ch x tr_num
+        size(cpFeaturesL3)
         numTrainImages = size(cpFeaturesL3, 2);
 
         softmaxX = reshape(softmaxX, inputSizeL4, numTrainImages);
+        size(softmaxX)
         
         softmaxY = y(startPosition:endPosition, :);
         

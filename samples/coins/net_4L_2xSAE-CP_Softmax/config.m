@@ -46,7 +46,7 @@ inputSizeL4 = cnn{2}.outputSize;
 softmaxLambda = 1e-4; % weight decay for L3
 
 % !! WHEN CHANGE batchSize - CLEAN UP / DELETE TEMP DIRECTORY (tempDir)
-batchSize = 210; % batch size for mini-batch algorithm
+batchSize = 30; % batch size for mini-batch algorithm
 numTrainIterL4 = 400; % L4 amount of iterations over whole training set
 numClassesL4 = 30; % amount of output lables, classes (e.g. coins)
 
@@ -55,7 +55,7 @@ addpath ../libs/minFunc/
 
 %  Use minFunc to minimize cost functions
 saeOptions.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.
-saeOptions.maxIter = 200;	  % Maximum number of iterations of L-BFGS to run 
+saeOptions.maxIter = 800;	  % Maximum number of iterations of L-BFGS to run 
 saeOptions.display = 'on';
 
 softmaxOptions.Method = 'lbfgs'; % Use L-BFGS to optimize our cost function.

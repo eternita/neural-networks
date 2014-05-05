@@ -11,8 +11,8 @@ cnn{1}.inputHeight = imgH;
 cnn{1}.inputChannels = 1;
 cnn{1}.features = 100;
 cnn{1}.patchSize = 6;
-cnn{1}.poolSize = 15;
-cnn{1}.numPatches = 10000;
+cnn{1}.poolSize = 10;
+cnn{1}.numPatches = 100000;
 cnn{1}.inputVisibleSize = cnn{1}.patchSize * cnn{1}.patchSize * cnn{1}.inputChannels;
 
 cnn{1}.outputWidth = floor((cnn{1}.inputWidth - cnn{1}.patchSize + 1) / cnn{1}.poolSize);
@@ -24,10 +24,10 @@ cnn{1}.outputSize = cnn{1}.outputWidth * cnn{1}.outputHeight * cnn{1}.outputChan
 cnn{2}.inputWidth = cnn{1}.outputWidth;
 cnn{2}.inputHeight = cnn{1}.outputHeight;
 cnn{2}.inputChannels = cnn{1}.outputChannels;
-cnn{2}.features = 150;
+cnn{2}.features = 200;
 cnn{2}.patchSize = 3;
 cnn{2}.poolSize = 3;
-cnn{2}.numPatches = 10000;
+cnn{2}.numPatches = 100000;
 cnn{2}.inputVisibleSize = cnn{2}.patchSize * cnn{2}.patchSize * cnn{2}.inputChannels;
 
 cnn{2}.outputWidth = floor((cnn{2}.inputWidth - cnn{2}.patchSize + 1) / cnn{2}.poolSize);
@@ -45,12 +45,12 @@ convolutionsStepSize = 50;
 inputSizeL4 = cnn{2}.outputSize; 
 
 % L5
-inputSizeL5 = 300;
+inputSizeL5 = 1000;
 
 mlpLambda = 1e-4; % weight decay for L4-L5
 
 % !! WHEN CHANGE batchSize - CLEAN UP / DELETE TEMP DIRECTORY (tempDir)
-batchSize = 210; % batch size for mini-batch algorithm
+batchSize = 30; % batch size for mini-batch algorithm
 numTrainIterL4L5 = 1000; % L4L5 amount of iterations over whole training set
 numOutputClasses = 30; % amount of output lables, classes (e.g. coins)
 
