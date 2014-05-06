@@ -1,4 +1,4 @@
-function [prediction] = testPrediction(imageDir, datasetFile, cnn, Theta4, Theta5, convolutionsStepSize, maxTestSamples, maxTopPredictions)
+function [prediction] = testPrediction(imageDir, datasetFile, cnn, Theta3, Theta4, convolutionsStepSize, maxTestSamples, maxTopPredictions)
 
 %TESTPREDICTION Implements the test on specific dataset
 %
@@ -32,7 +32,7 @@ fprintf('\n    %u items in dataset ', numTestImages);
 
 [X] = loadImageSet(sampleId, imageDir, cnn{1}.inputWidth, cnn{1}.inputHeight); % images
 
-[pred] = netPredict(X, cnn, Theta4, Theta5, convolutionsStepSize, maxTopPredictions);
+[pred] = netPredict(X, cnn, Theta3, Theta4, convolutionsStepSize, maxTopPredictions);
 
 prediction = [sampleId, pred];
 

@@ -317,11 +317,9 @@ for trainingIter = 1 : numTrainIterL4 % loop over training iterations
         
         % Reshape the pooledFeatures to form an input vector for softmax
         softmaxX = permute(cpFeaturesL3, [4 3 1 2]); % W x H x Ch x tr_num
-        size(cpFeaturesL3)
         numTrainImages = size(cpFeaturesL3, 2);
 
         softmaxX = reshape(softmaxX, inputSizeL4, numTrainImages);
-        size(softmaxX)
         
         softmaxY = y(startPosition:endPosition, :);
         

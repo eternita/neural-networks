@@ -305,12 +305,12 @@ if exist(theta5File, 'file')
     initial_Theta5 = Theta5;  
 else
     % File does not exist. random initialization
-    fprintf('Cant load Thetta2 from %s  \n  Do random initialization for Thetta2 \n', theta5File);
+    fprintf('Cant load Thetta5 from %s  \n  Do random initialization for Thetta2 \n', theta5File);
     initial_Theta5 = randInitializeWeights(mlpHiddenLayerSize, numOutputClasses);
 end
 
-fprintf('Theta1: %u x %u \n', size(initial_Theta4, 2), size(initial_Theta4, 1));
-fprintf('Theta2: %u x %u \n', size(initial_Theta5, 2), size(initial_Theta5, 1));
+fprintf('Theta4: %u x %u \n', size(initial_Theta4, 2), size(initial_Theta4, 1));
+fprintf('Theta5: %u x %u \n', size(initial_Theta5, 2), size(initial_Theta5, 1));
 %----- end load Thettas -------------------
 
 % Unroll parameters

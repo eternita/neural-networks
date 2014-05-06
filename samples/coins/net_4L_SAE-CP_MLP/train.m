@@ -20,9 +20,9 @@ cnn{1}
 fprintf('\nL1 -> L2  (%u X %u X %u) -> (%u X %u X %u) / (%u -> %u) \n', cnn{1}.inputWidth, cnn{1}.inputHeight, cnn{1}.inputChannels, cnn{1}.outputWidth, cnn{1}.outputHeight, cnn{1}.outputChannels, ...
                                         cnn{1}.inputWidth * cnn{1}.inputHeight * cnn{1}.inputChannels, cnn{1}.outputWidth * cnn{1}.outputHeight * cnn{1}.outputChannels);
                                     
-fprintf('\nL2 -> L3  %u -> %u \n', cnn{1}.outputWidth * cnn{1}.outputHeight * cnn{1}.outputChannels, inputSizeL5);
+fprintf('\nL2 -> L3  %u -> %u \n', cnn{1}.outputWidth * cnn{1}.outputHeight * cnn{1}.outputChannels, inputSizeL4);
 
-fprintf('\nL3 -> L4  %u -> %u \n', inputSizeL5, numOutputClasses);
+fprintf('\nL3 -> L4  %u -> %u \n', inputSizeL4, numOutputClasses);
 
 %% Initializatoin
 
@@ -166,48 +166,44 @@ end; % for batchIter = 1 : batchIterationCount
 %% L3 L4 (MLP) Training
 fprintf('\nL3 L4 (MLP) Training ... \n')
 
-        input_layer_size = inputSizeL3;
-        hidden_layer_size = inputSizeL5;
-        num_output_labels = numOutputClasses;
+mlpInputLayerSize = inputSizeL3;
+mlpHiddenLayerSize = inputSizeL4;
         
+theta3File = strcat(datasetDir, tempDir, 'L3_THETA.mat');
+if exist(theta3File, 'file')
+    % L4_THETA.mat file exists. 
+    fprintf('Loading Thetta3 from %s  \n', theta3File);
+    load(theta3File);
+    initial_Theta3 = Theta3;  
+else
+    % File does not exist. random initialization
+    fprintf('Cant load Thetta4 from %s  \n  Do random initialization for Thetta1 \n', theta3File);
+    initial_Theta3 = randInitializeWeights(mlpInputLayerSize, mlpHiddenLayerSize);
+end
+
 theta4File = strcat(datasetDir, tempDir, 'L4_THETA.mat');
 if exist(theta4File, 'file')
-    % L4_THETA.mat file exists. 
+    % L5_THETA.mat file exists. 
     fprintf('Loading Thetta4 from %s  \n', theta4File);
     load(theta4File);
     initial_Theta4 = Theta4;  
 else
     % File does not exist. random initialization
-    fprintf('Cant load Thetta4 from %s  \n  Do random initialization for Thetta1 \n', theta4File);
-    initial_Theta4 = randInitializeWeights(input_layer_size, hidden_layer_size);
+    fprintf('Cant load Thetta2 from %s  \n  Do random initialization for Thetta2 \n', theta4File);
+    initial_Theta4 = randInitializeWeights(mlpHiddenLayerSize, numOutputClasses);
 end
 
-theta5File = strcat(datasetDir, tempDir, 'L5_THETA.mat');
-if exist(theta5File, 'file')
-    % L5_THETA.mat file exists. 
-    fprintf('Loading Thetta5 from %s  \n', theta5File);
-    load(theta5File);
-    initial_Theta5 = Theta5;  
-else
-    % File does not exist. random initialization
-    fprintf('Cant load Thetta2 from %s  \n  Do random initialization for Thetta2 \n', theta5File);
-    initial_Theta5 = randInitializeWeights(hidden_layer_size, num_output_labels);
-end
-
-fprintf('Theta1: %u x %u \n', size(initial_Theta4, 2), size(initial_Theta4, 1));
-fprintf('Theta2: %u x %u \n', size(initial_Theta5, 2), size(initial_Theta5, 1));
+fprintf('Theta3: %u x %u \n', size(initial_Theta3, 2), size(initial_Theta3, 1));
+fprintf('Theta4: %u x %u \n', size(initial_Theta4, 2), size(initial_Theta4, 1));
 %----- end load Thettas -------------------
 
 % Unroll parameters
-nn_params = [initial_Theta4(:) ; initial_Theta5(:)];
+nn_params = [initial_Theta3(:) ; initial_Theta4(:)];
 
+costs = zeros(numTrainIterL3L4, 1); % cost func over training iterations
 
-
-
-costs = zeros(numTrainIterL4L5, 1); % cost func over training iterations
-
-for trainingIter = 1 : numTrainIterL4L5 % loop over training iterations
-    fprintf('\nStarting training iteration %u from %u \n', trainingIter, numTrainIterL4L5);
+for trainingIter = 1 : numTrainIterL3L4 % loop over training iterations
+    fprintf('\nStarting training iteration %u from %u \n', trainingIter, numTrainIterL3L4);
     % loop over batches (training examples)
     
     iterCost = 0;
@@ -219,50 +215,36 @@ for trainingIter = 1 : numTrainIterL4L5 % loop over training iterations
             endPosition = m;
         end
 
-        fprintf('\n training iteration (%u / %u): batch sub-iteration (%u / %u): start %u end %u from %u training samples \n', trainingIter, numTrainIterL4L5, batchIter, batchIterationCount, startPosition, endPosition, m);
+        fprintf('\n training iteration (%u / %u): batch sub-iteration (%u / %u): start %u end %u from %u training samples \n', trainingIter, numTrainIterL3L4, batchIter, batchIterationCount, startPosition, endPosition, m);
         
         % loads cpFeaturesL3
-        load(strcat(datasetDir, tempDir, 'L3_CP_FEATURES_', num2str(batchIter), '.mat')); % file must exist from previous iterations
+        load(strcat(datasetDir, tempDir, 'L2_CP_FEATURES_', num2str(batchIter), '.mat')); % file must exist from previous iterations
         
         % Reshape the pooledFeatures to form an input vector for softmax
-        X = permute(cpFeaturesL3, [4 3 1 2]); % W x H x Ch x tr_num
-        numTrainImages = size(cpFeaturesL3, 2);
+        X = permute(cpFeaturesL2, [4 3 1 2]); % W x H x Ch x tr_num
+        numTrainImages = size(cpFeaturesL2, 2);
 
         X = reshape(X, inputSizeL3, numTrainImages);
         
-        %softmaxY = y(startPosition:endPosition, :);
-        
-%        [theta, cost] = minFunc( @(p) softmaxCost(p, ...
-%                                   numClassesL4, inputSizeL3, softmaxLambda, ...
-%                                   softmaxX, softmaxY), ...                                   
-%                              theta, softmaxOptions);        
-                          
-
-        
-        costFunction = @(p) mlpCost(p, ...
-                                       input_layer_size, ...
-                                       hidden_layer_size, ...
-                                       num_output_labels, X, y(startPosition:endPosition), mlpLambda);
-        [nn_params, cost] = minFunc(costFunction, nn_params, mlpOptions);
+        [nn_params, cost] = minFunc( @(p) mlpCost(p, ...
+                                                mlpInputLayerSize, ...
+                                                mlpHiddenLayerSize, ...
+                                                numOutputClasses, X, y(startPosition:endPosition), mlpLambda), ...
+                                    nn_params, mlpOptions);        
                           
         % save thetas - can be used if training cycle interrupted 
-        Theta4 = reshape(nn_params(1:(input_layer_size + 1) * hidden_layer_size), (input_layer_size + 1), hidden_layer_size);
-        Theta5 = reshape(nn_params((1 + (input_layer_size + 1) * hidden_layer_size):end), (hidden_layer_size + 1), num_output_labels);
+        Theta3 = reshape(nn_params(1:(mlpInputLayerSize + 1) * mlpHiddenLayerSize), (mlpInputLayerSize + 1), mlpHiddenLayerSize);
+        Theta4 = reshape(nn_params((1 + (mlpInputLayerSize + 1) * mlpHiddenLayerSize):end), (mlpHiddenLayerSize + 1), numOutputClasses);
+        save(theta3File, 'Theta3');
         save(theta4File, 'Theta4');
-        save(theta5File, 'Theta5');
     
         
         iterCost = iterCost + cost;
     end; % for batchIter = 1 : batchIterationCount
     iterCost = iterCost/batchIterationCount;
     costs(trainingIter) = iterCost;
-    
-    % Fold softmaxTheta into a nicer format
-%    softmaxTheta = reshape(theta, numClassesL4, inputSizeL3);
-    % save softmaxTheta - can be used if training cycle interrupted 
-%    save(softmaxtThetaFile, 'softmaxTheta');
-    
-    fprintf('\nIteration %4i done - softmaxTheta saved. Average Cost is %4.4f \n', trainingIter, iterCost);
+        
+    fprintf('\nIteration %4i done - Theta3 and Theta4 saved. Average Cost is %4.4f \n', trainingIter, iterCost);
 
 %-------- debug info ------------    
     figure(2);

@@ -22,24 +22,9 @@ fprintf('softmaxCost numClasses: %u \n', numClasses);
 fprintf('softmaxCost inputSize: %u \n', inputSize);
 %}
 
-
 allLabels = repmat((1:numClasses)', [1, numCases]); % numClasses X numCases (labels x m)
 yLabels = repmat(labels', [numClasses, 1]); % m x labels (repeated labels)
 groundTruth = double(allLabels == yLabels);
-
-
-%cost = 0;
-%thetagrad = zeros(numClasses, inputSize);
-
-
-%size(theta)
-%size(data)
-%size(thetagrad)
-%labels 
-%1:numCases
-%size(groundTruth)
-%groundTruth
-
 
 M = theta * data;
 p = bsxfun(@rdivide, exp(M), sum(exp(M)));
