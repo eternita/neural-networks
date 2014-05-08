@@ -117,7 +117,7 @@ else
     fprintf('  Do features extraction \n');
     
     %  Obtain random parameters theta
-    theta = initializeParameters(cnn{1}.features, cnn{1}.inputVisibleSize);
+    theta = saeMatrixInit(cnn{1}.features, cnn{1}.inputVisibleSize);
 
     [sae2OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
                                        cnn{1}.inputVisibleSize, cnn{1}.features, ...
@@ -223,7 +223,7 @@ else
     fprintf('  Do features extraction \n');
     
     %  Obtain random parameters theta
-    theta = initializeParameters(cnn{2}.features, cnn{2}.inputVisibleSize);
+    theta = saeMatrixInit(cnn{2}.features, cnn{2}.inputVisibleSize);
 
     [sae3OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
                                        cnn{2}.inputVisibleSize, cnn{2}.features, ...

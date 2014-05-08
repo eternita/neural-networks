@@ -119,7 +119,7 @@ else
     fprintf('  Do features extraction \n');
     
     %  Obtain random parameters theta
-    theta = initializeParameters(cnn{1}.features, cnn{1}.inputVisibleSize);
+    theta = saeMatrixInit(cnn{1}.features, cnn{1}.inputVisibleSize);
 
     [sae2OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
                                        cnn{1}.inputVisibleSize, cnn{1}.features, ...
@@ -224,7 +224,7 @@ else
     fprintf('  Do features extraction \n');
     
     %  Obtain random parameters theta
-    theta = initializeParameters(cnn{2}.features, cnn{2}.inputVisibleSize);
+    theta = saeMatrixInit(cnn{2}.features, cnn{2}.inputVisibleSize);
 
     [sae3OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
                                        cnn{2}.inputVisibleSize, cnn{2}.features, ...
@@ -294,7 +294,7 @@ if exist(theta4File, 'file')
 else
     % File does not exist. random initialization
     fprintf('Cant load Thetta4 from %s  \n  Do random initialization for Thetta1 \n', theta4File);
-    initial_Theta4 = randInitializeWeights(mlpInputLayerSize, mlpHiddenLayerSize);
+    initial_Theta4 = mlpMatrixLayerInit(mlpInputLayerSize, mlpHiddenLayerSize);
 end
 
 theta5File = strcat(datasetDir, tempDir, 'L5_THETA.mat');
@@ -306,7 +306,7 @@ if exist(theta5File, 'file')
 else
     % File does not exist. random initialization
     fprintf('Cant load Thetta5 from %s  \n  Do random initialization for Thetta2 \n', theta5File);
-    initial_Theta5 = randInitializeWeights(mlpHiddenLayerSize, numOutputClasses);
+    initial_Theta5 = mlpMatrixLayerInit(mlpHiddenLayerSize, numOutputClasses);
 end
 
 fprintf('Theta4: %u x %u \n', size(initial_Theta4, 2), size(initial_Theta4, 1));

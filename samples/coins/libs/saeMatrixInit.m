@@ -1,4 +1,4 @@
-function theta = initializeParameters(hiddenSize, visibleSize)
+function theta = saeMatrixInit(hiddenSize, visibleSize)
 
 % Initialize parameters randomly based on layer sizes.
 r  = sqrt(6) / sqrt(hiddenSize+visibleSize+1);   % we'll choose weights uniformly from the interval [-r, r]

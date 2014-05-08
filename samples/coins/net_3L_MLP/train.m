@@ -74,7 +74,7 @@ if exist(theta1File, 'file')
 else
     % File does not exist. random initialization
     fprintf('Cant load Thetta1 from %s  \n  Do random initialization for Thetta1 \n', theta1File);
-    initial_Theta1 = randInitializeWeights(input_layer_size, hidden_layer_size);
+    initial_Theta1 = mlpMatrixLayerInit(input_layer_size, hidden_layer_size);
 end
 
 theta2File = strcat(datasetDir, tempDir, 'THETA2.mat');
@@ -86,7 +86,7 @@ if exist(theta2File, 'file')
 else
     % File does not exist. random initialization
     fprintf('Cant load Thetta2 from %s  \n  Do random initialization for Thetta2 \n', theta2File);
-    initial_Theta2 = randInitializeWeights(hidden_layer_size, num_output_labels);
+    initial_Theta2 = mlpMatrixLayerInit(hidden_layer_size, num_output_labels);
 end
 
 fprintf('Theta1: %u x %u \n', size(initial_Theta1, 2), size(initial_Theta1, 1));
