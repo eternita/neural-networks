@@ -5,6 +5,12 @@ import net.coinshome.nn.input.CoinNNInputPreparer;
 
 public class Main {
 
+	// setup proxy if you need
+	static
+	{
+//		System.setProperty("http.proxyHost", "your.proxy.com");
+//		System.setProperty("http.proxyPort", "8080");		
+	}
 
 	/**
 	 * @param args
@@ -19,12 +25,11 @@ public class Main {
 	private static void prepareCoinNNInput() throws Exception
 	{
 		CoinNNInputPreparer preperer = new CoinNNInputPreparer(
-				"E:/nn4coins/dataset-all-400_200_gau",
-//				"C:/Develop/src/pavlikovkskiy/chn/data/dataset-mexico-400_200",
-//				"C:/Develop/src/pavlikovkskiy/chn/data/dataset-3_924_15_200_100_gau_ext_test",
+//				"C:/Develop/_n4j-nn-data/dataset-30_400_200_x7_br",
+				"C:/Develop/_chn-data/dataset-454_400_200-mexico_x7",
 				400,
 				200,
-				true // true - dif of gau, false - grayscale
+				false // true - do aslo dif of gau, false - grayscale only
 				);
 		preperer.prepare();
 		

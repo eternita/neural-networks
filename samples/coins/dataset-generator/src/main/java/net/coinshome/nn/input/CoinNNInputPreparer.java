@@ -24,6 +24,7 @@ import net.coinshome.nn.input.img.CoinDetector;
 import net.coinshome.nn.input.img.CoinImageInfo;
 import net.coinshome.nn.input.img.ImageGenerator;
 import net.coinshome.nn.input.img.ImageUtils;
+import net.coinshome.nn.utils.CrawlerUtils;
 
 /**
  * 
@@ -214,10 +215,11 @@ public class CoinNNInputPreparer {
 			String imgId = lineArr[2]; 
 //			String coinIdxStr = "" + coinIdx;
 			Set<String> generatedImgIndexes = null;
+			File inImgFile = null;
 			{ // start process images
 				try
 				{
-					File inImgFile = new File(IMG_INPUT_DIR, imgId + ".jpg");
+					inImgFile = new File(IMG_INPUT_DIR, imgId + ".jpg");
 					
 			        BufferedImage img = ImageIO.read(new FileInputStream(inImgFile));
 					
@@ -229,7 +231,15 @@ public class CoinNNInputPreparer {
 			            notDetectedCount++;
 			        } else {
 						long coinIdx = getCoinIndex(coinIdxMap, coinId);
-			        	generatedImgIndexes = generateImagesAndIndexes(img, cii, coinIdx, i + 1);
+						
+						
+			        	if ("tr".equals(getInputSetType(i + 1))) // do artificial image generation for training set only
+			        	{
+				        	generatedImgIndexes = generateImagesAndIndexes(img, cii, coinIdx, i + 1, Integer.MAX_VALUE);
+			        	} else {
+				        	generatedImgIndexes = generateImagesAndIndexes(img, cii, coinIdx, i + 1, 1);
+			        	}
+
 			        	
 			        	{ // update counters
 							Long processedCoinInstances = counters.get("processedCoinInstances");
@@ -245,6 +255,7 @@ public class CoinNNInputPreparer {
 			        
 				} catch (FileNotFoundException ex) {
 		        	System.out.println(ex.getMessage());
+		        	downloadFromSite(imgId, inImgFile);
 //					ex.printStackTrace();
 				} catch (Exception ex) {
 					ex.printStackTrace();
@@ -292,8 +303,23 @@ public class CoinNNInputPreparer {
 		return ciRecoids;
 	}
 	
+	private void downloadFromSite(String imgId, File inImgFile) {
+		String imgUrl = "http://st.coinshome.net/fs/600_300/" + imgId + ".jpg";
+		byte[] img = CrawlerUtils.downloadDataFromSite(imgUrl);
+		FileOutputStream fos;
+		try {
+			fos = new FileOutputStream(inImgFile);
+			fos.write(img);
+			fos.close();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return;
+	}
+
 	private Set<String> generateImagesAndIndexes(BufferedImage img,
-			CoinImageInfo cii, long coinIdx, int ciIdx) {
+			CoinImageInfo cii, long coinIdx, int ciIdx, int maxAmount) {
 		
 		long maxCoinVariance = 100000; 
 		long maxCIVariance = 1000;
@@ -316,7 +342,7 @@ public class CoinNNInputPreparer {
 //			File origImgFile = new File(COLOR_IMG_OUTPUT_DIR, coinIdx + "_" + ciIdx + ".jpg");
 //			ImageIO.write(extrCoinImg, "jpg", new FileOutputStream(origImgFile));
 			
-			List<BufferedImage> generatedImgs = ImageGenerator.generate(extrCoinImg);
+			List<BufferedImage> generatedImgs = ImageGenerator.generate(extrCoinImg, maxAmount);
 			
 		
 			for (int imgIdx = 0; imgIdx < generatedImgs.size(); imgIdx++)
@@ -377,24 +403,35 @@ public class CoinNNInputPreparer {
 	 */
 	private String getInputSetType(int i)
 	{
+		return "tr";
+/*				
 		if (1 == i) return "tr";
 		
 		if (2 == i) return "cv";
 		
 		if (3 == i) return "tst";
-		
-		if (4 == i) return "tr";
-		if (5 == i) return "tr";
+
+		if (4 == i) return "cv";
+		if (5 == i) return "tst";
 		if (6 == i) return "tr";
 		if (7 == i) return "cv";
 		if (8 == i) return "tst";
-		if (9 == i) return "tr";
-		if (10 == i) return "tr";
+		if (9 == i) return "cv";
+		if (10 == i) return "tst";
+		
+//		if (4 == i) return "tr";
+//		if (5 == i) return "tr";
+//		if (6 == i) return "tr";
+//		if (7 == i) return "cv";
+//		if (8 == i) return "tst";
+//		if (9 == i) return "tr";
+//		if (10 == i) return "tr";
 		
 		if (i > 10)
 			return getInputSetType(i - 10);
 		else
 			return "--"; // never occurs
+//*/		
 		
 	}
 

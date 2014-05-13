@@ -8,7 +8,9 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
 
+import com.jhlabs.image.ContrastFilter;
 import com.jhlabs.image.DoGFilter;
+import com.jhlabs.image.InvertFilter;
 
 public class ImageUtils {
 
@@ -76,7 +78,34 @@ public class ImageUtils {
 		
 		return outputImg;
 	}
-	
+
+	public static BufferedImage invert(BufferedImage img) {
+        
+		if (null == img)
+			return null;
+		
+		InvertFilter f = new InvertFilter();
+		
+		BufferedImage outputImg = deepCopy(img);
+		f.filter(img, outputImg);
+		
+		return outputImg;
+	}
+		
+	public static BufferedImage contrast(BufferedImage img, float contrast, float brightness) {
+        
+		if (null == img)
+			return null;
+		
+		ContrastFilter f = new ContrastFilter();
+		f.setBrightness(brightness);
+		f.setContrast(contrast);
+		
+		BufferedImage outputImg = deepCopy(img);
+		f.filter(img, outputImg);
+		
+		return outputImg;
+	}
 	
 	
 	/**

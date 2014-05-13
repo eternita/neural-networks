@@ -14,7 +14,7 @@ public class ImageGenerator {
     
     // total generated images: 2*8*3 
 
-	public static List<BufferedImage> generate(BufferedImage srcImg)
+	public static List<BufferedImage> generate(BufferedImage srcImg, int maxAmount)
 			throws Exception {
 		
 		List<BufferedImage> outImages = new ArrayList<BufferedImage>(); 
@@ -34,7 +34,37 @@ public class ImageGenerator {
         rightGr.drawImage(srcImg, 0, 0, partWidth, partHeight, partWidth, 0, 2*partWidth, partHeight, null);
 
         // compose multiple images using various rotations
-        rotate(srcImg, leftImg, rightImg, outImages);
+        rotate(srcImg, leftImg, rightImg, outImages, maxAmount);
+    
+/*        
+//        float brightness = 1f;
+        float contrast = 1f;
+        for (float brightness = 0.8f; brightness <= 1.2f; brightness = brightness + 0.1f)        	
+        {
+        	if (brightness == 1)
+        		continue;
+//            for (float contrast = 1.2f; contrast <= 1.6f; contrast = contrast + 0.2f)
+            {            	                
+                rotate(srcImg, 
+                		ImageUtils.contrast(leftImg, contrast, brightness), 
+                		ImageUtils.contrast(rightImg, contrast, brightness), 
+                		outImages, maxAmount);
+            }
+        	
+        }
+//*/
+        
+/*        
+        // invert
+        if (maxAmount > outImages.size())
+        	outImages.add(ImageUtils.invert(srcImg));
+        
+        { // invert
+        	leftImg = ImageUtils.invert(leftImg);
+        	rightImg = ImageUtils.invert(rightImg);
+            rotate(srcImg, leftImg, rightImg, outImages, maxAmount);
+        }
+//*/        
 /*        
         { // swap
             List<BufferedImage> swapImages = swap(leftImg, rightImg);
@@ -56,7 +86,7 @@ public class ImageGenerator {
 
 	}
 	
-	private static void rotate(BufferedImage srcImg, BufferedImage leftImg, BufferedImage rightImg, List<BufferedImage> outImages)
+	private static void rotate(BufferedImage srcImg, BufferedImage leftImg, BufferedImage rightImg, List<BufferedImage> outImages, int maxAmount)
 	{
         for (int i = ANGLE_DEVIATION_STEP; i < MAX_ANGLE_DEVIATION; i = i+ANGLE_DEVIATION_STEP)
         {
@@ -83,18 +113,19 @@ public class ImageGenerator {
 //            				rotate(rightImg, -i*Math.PI/180), 
 //            				ImageUtils.deepCopy(srcImg)));
             
+            if (maxAmount > outImages.size())
+	            outImages.add(
+	            		compose(
+	            				rotate(leftImg, i*Math.PI/180), 
+	            				rotate(rightImg, i*Math.PI/180), 
+	            				ImageUtils.deepCopy(srcImg)));
             
-            outImages.add(
-            		compose(
-            				rotate(leftImg, i*Math.PI/180), 
-            				rotate(rightImg, i*Math.PI/180), 
-            				ImageUtils.deepCopy(srcImg)));
-            
-            outImages.add(
-            		compose(
-            				rotate(leftImg, -i*Math.PI/180), 
-            				rotate(rightImg, -i*Math.PI/180), 
-            				ImageUtils.deepCopy(srcImg)));
+            if (maxAmount > outImages.size())
+	            outImages.add(
+	            		compose(
+	            				rotate(leftImg, -i*Math.PI/180), 
+	            				rotate(rightImg, -i*Math.PI/180), 
+	            				ImageUtils.deepCopy(srcImg)));
             
             
 //            outImages.add(
