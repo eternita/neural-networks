@@ -29,12 +29,12 @@ convolutionsStepSize = 50;
 
 % L3
 inputSizeL3 = cnn{1}.outputSize; 
-softmaxLambda = 1e-4; % weight decay for L3
+softmaxLambda = 1e-2; % weight decay for L3
 
 % !! WHEN CHANGE batchSize - CLEAN UP / DELETE TEMP DIRECTORY (tempDir)
 batchSize = 210; % batch size for mini-batch algorithm
 numTrainIterL3 = 400; % L4 amount of iterations over whole training set
-numClassesL3 = 30; % amount of output lables, classes (e.g. coins)
+numClassesL3 = 262; % amount of output lables, classes (e.g. coins)
 
 addpath ../libs/         % load libs
 addpath ../libs/minFunc/

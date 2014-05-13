@@ -3,7 +3,7 @@ clear ; close all; clc % cleanup
 %% Configuration
 %  ! Setup and check all parameters before run
 
-datasetDir = 'C:/Develop/_n4j-nn-data/dataset-30_400_200_x7/'; % dataset root dir
+datasetDir = 'C:/Develop/_chn-data/dataset-454_400_200-mexico_x7/'; % dataset root dir
 trainSetCSVFile = 'coin.tr.shuffled.csv'; % this file will be generated from 'coin.tr.csv'
 
 unlabeledImgDir = 'img_unlabeled/'; % sub directory with images for auto-encoder training (unlabeled/for unsupervised feature extraction)
